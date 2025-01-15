@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>CFBundleDevelopmentRegion</key>
+		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<key>CFBundleDisplayName</key>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Necesitamos acceder a tu galería para seleccionar una foto de perfil.</string>
+		<key>GMSApiKey</key>
+		<string>AIzaSyDUVS-wh25ShrtIHnuXW0J8MuBRz9KC7ak</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Esta aplicación necesita acceder a tu ubicación para mostrar tu posición en el mapa.</string>
+		<key>NSLocationAlwaysUsageDescription</key>
+		<string>Esta aplicación necesita acceso continuo a tu ubicación para ofrecer funciones basadas en la ubicación incluso cuando la aplicación esté en segundo plano.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Esta aplicación necesita acceder a tu ubicación tanto en primer como segundo plano para mejorar tu experiencia.</string>
+		<string>Rayo Taxi</string>
+		<key>CFBundleExecutable</key>
+		<string>$(EXECUTABLE_NAME)</string>
+		<key>CFBundleIdentifier</key>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+		<key>CFBundleName</key>
+		<string>rayo_driver</string>
+		<key>CFBundlePackageType</key>
+		<string>APPL</string>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>whatsapp</string>
+			<string>tel</string>
+		</array>
+		<key>CFBundleShortVersionString</key>
+		<string>$(FLUTTER_BUILD_NAME)</string>
+		<key>CFBundleSignature</key>
+		<string>????</string>
+		<key>CFBundleVersion</key>
+		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<key>LSRequiresIPhoneOS</key>
+		<true/>
+		<key>UILaunchStoryboardName</key>
+		<string>LaunchScreen</string>
+		<key>UIMainStoryboardFile</key>
+		<string>Main</string>
+		<key>UISupportedInterfaceOrientations</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UISupportedInterfaceOrientations~ipad</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationPortraitUpsideDown</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>CADisableMinimumFrameDurationOnPhone</key>
+		<true/>
+		<key>UIApplicationSupportsIndirectInputEvents</key>
+		<true/>
+		<key>UIStatusBarHidden</key>
+		<false/>
+	</dict>
+</plist>
