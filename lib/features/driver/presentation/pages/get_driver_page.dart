@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rayo_taxi/common/theme/app_color.dart';
 import 'package:rayo_taxi/features/driver/domain/entities/change_availability_entitie.dart';
 import 'package:rayo_taxi/features/driver/domain/entities/driver.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/changeAvailability/changeAvailability_getx.dart';
@@ -36,24 +37,10 @@ class _GetDriverPage extends State<GetDriverPage> {
   final RemovedataaccountGetx _removedataaccountGetx =
       Get.find<RemovedataaccountGetx>();
 
-  Future<void> _logout() async {
-    QuickAlert.show(
-      context: Get.context!,
-      type: QuickAlertType.confirm,
-      title: 'Cerrar sesión',
-      text: '¿Estás seguro de que deseas cerrar sesión?',
-      confirmBtnText: 'Sí',
-      cancelBtnText: 'No',
-      onConfirmBtnTap: () async {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        _driverGetx.logout();
-        await prefs.remove('auth_token');
-
-        await Get.offAll(() => LoginDriverPage());
-      },
-    );
+  
+ Future<void> _logout() async {
+   _driverGetx.logoutAlert();
   }
-
   @override
   void initState() {
     super.initState();
@@ -137,11 +124,14 @@ class _GetDriverPage extends State<GetDriverPage> {
                               height: double.infinity,
                               errorBuilder: (BuildContext context,
                                   Object exception, StackTrace? stackTrace) {
-                                return const Icon(
-                                  Icons.person,
-                                  size: 40,
-                                  color: Colors.grey,
-                                );
+                                return Text(
+                                        (drive.name ?? '?')[0].toUpperCase(),
+                                        style:  TextStyle(
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).colorScheme.avatar,
+                                        ),
+                                      );
                               },
                             ),
                           ),
@@ -162,8 +152,7 @@ class _GetDriverPage extends State<GetDriverPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 5),
-                          Text('Fecha de nacimiento: ${drive.birthdate ?? 'N/A'}',
-                              style: Theme.of(context).textTheme.bodyLarge),
+                         
                           Text(drive.email ?? 'Sin email',
                               style: Theme.of(context).textTheme.bodyLarge),
                         ],
@@ -314,9 +303,9 @@ class _GetDriverPage extends State<GetDriverPage> {
                 ),
                 ListOption(
                   icon: Icons.privacy_tip,
-                  title: 'Terminos y Condiciones',
+                  title: 'Avisos de Privacidad',
                   subtitle: 'Detalles de nuestras políticas y condiciones',
-                  onPressed: () => _showPdfModal(context),
+                  onPressed: () => _showPdfModal(Get.context!),
                 ),
                 ListOption(
                   icon: Icons.delete_forever,

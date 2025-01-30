@@ -54,7 +54,8 @@ class WaitingStatusWidget extends StatelessWidget {
     return SizedBox.shrink();
   }
 
-  Widget _buildWaitingMessage(String message, Color color, BuildContext context) {
+   Widget _buildWaitingMessage(
+      String message, Color color, BuildContext context) {
     return Positioned(
       top: 80,
       left: 16,
@@ -79,35 +80,31 @@ class WaitingStatusWidget extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ),
-            Stack(
-              alignment: Alignment.topRight,
-              children: [
-                GestureDetector(
-                  onTap: () {
-              _showConfirmationDialog(context);
-                  },
-                  child: Container(
-                    height: 40,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.cancel_outlined,
-                      color: Colors.white,
-                    ),
-                  ),
+            ElevatedButton(
+              onPressed: () {
+                _showConfirmationDialog(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-               
-              ],
+              ),
+              child: Text(
+                'Rechazar oferta',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
   Widget _buildCounterOfferMessage(BuildContext context) {
     return Positioned(
       top: 80,

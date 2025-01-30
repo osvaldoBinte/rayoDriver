@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:quickalert/quickalert.dart';
@@ -21,6 +22,7 @@ import 'package:rayo_taxi/features/travel/presentation/getxtravel/TravelById/tra
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/TravelWithTariff/travelWithTariff_getx.dart';
 import 'package:rayo_taxi/common/theme/app_color.dart';
 import 'package:rayo_taxi/features/travel/presentation/page/widgets/customSnacknar.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/widgets/custom_alert_dialog.dart';
 import 'package:rayo_taxi/main.dart';
 
 import '../../../../../common/routes/ navigation_service.dart';
@@ -48,6 +50,8 @@ class AcceptTravelController extends GetxController {
   RxBool isIdStatusSix = false.obs;
   RxBool isIdStatusOne = false.obs;
   RxString waitingFor = ''.obs;
+  late BitmapDescriptor startIcon;
+  final RxBool isValidAmount = false.obs;
 
   late GoogleMapController mapController;
   final MapaLocalDataSource travelLocalDataSource = MapaLocalDataSourceImp();
@@ -63,15 +67,16 @@ class AcceptTravelController extends GetxController {
   @override
   void onInit() async {
     super.onInit();
-     // Limpiar estado inicial
-  markers.clear();
-  polylines.clear();
-  startLocation.value = null;
-  endLocation.value = null;
-  driverLocation.value = null;
-  isIdStatusSix.value = false;
-  isIdStatusOne.value = false;
-  waitingFor.value = '';
+    // Limpiar estado inicial
+    markers.clear();
+    polylines.clear();
+    startLocation.value = null;
+    endLocation.value = null;
+    driverLocation.value = null;
+    isIdStatusSix.value = false;
+    isIdStatusOne.value = false;
+    waitingFor.value = '';
+    _loadCustomMarker();
     print('id desde page desde onInit $idTravel');
     final ChangeavailabilityGetx _driverGetx =
         Get.find<ChangeavailabilityGetx>();
@@ -128,6 +133,13 @@ class AcceptTravelController extends GetxController {
     });
   }
 
+  Future<void> _loadCustomMarker() async {
+    startIcon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(devicePixelRatio: 2.5),
+      'assets/images/mapa/origen.png',
+    );
+  }
+
   @override
   void onClose() {
     positionStreamSubscription?.cancel();
@@ -172,7 +184,7 @@ class AcceptTravelController extends GetxController {
   }
 
   void addMarker(LatLng latLng,
-      {required bool isStartPlace, bool isDriver = false}) {
+      {required bool isStartPlace, bool isDriver = false}) async {
     final updatedMarkers = Set<Marker>.from(markers.value);
 
     if (isDriver) {
@@ -193,6 +205,7 @@ class AcceptTravelController extends GetxController {
           markerId: MarkerId('start'),
           position: latLng,
           infoWindow: InfoWindow(title: 'Inicio'),
+          icon: startIcon,
         ),
       );
       startLocation.value = latLng;
@@ -203,6 +216,10 @@ class AcceptTravelController extends GetxController {
           markerId: MarkerId('destination'),
           position: latLng,
           infoWindow: InfoWindow(title: 'Destino'),
+          icon: await BitmapDescriptor.fromAssetImage(
+            ImageConfiguration(size: Size(48, 48)),
+            'assets/images/mapa/destino.png',
+          ),
         ),
       );
       endLocation.value = latLng;
@@ -226,7 +243,7 @@ class AcceptTravelController extends GetxController {
         updatedPolylines.add(Polyline(
           polylineId: PolylineId('route'),
           points: polylineCoordinates,
-          color: Colors.blue,
+          color: Colors.black,
           width: 5,
         ));
 
@@ -260,9 +277,9 @@ class AcceptTravelController extends GetxController {
 
       if (acceptedGetx.acceptedtravelState.value
           is AcceptedtravelSuccessfully) {
-                                await AuthService().clearCurrenttravel();
+        await AuthService().clearCurrenttravel();
         CustomSnackBar.showSuccess('Éxito', 'Viaje aceptado correctamente');
-            await NavigationService.to.navigateToHome();
+        await NavigationService.to.navigateToHome();
 
 //    navigateToHome();
       } else if (acceptedGetx.acceptedtravelState.value
@@ -272,30 +289,27 @@ class AcceptTravelController extends GetxController {
         await rejectTravel();
       }
     } catch (e) {
-     
-        CustomSnackBar.showError(
-            'Error', 'El viaje ya fue aceptado o falló la solicitud');
-        await rejectTravel();
+      CustomSnackBar.showError(
+          'Error', 'El viaje ya fue aceptado o falló la solicitud');
+      await rejectTravel();
     }
   }
 
- Future<void> rejectTravel() async {
-  try {
-    await AuthService().clearCurrenttravel();
+  Future<void> rejectTravel() async {
+    try {
+      await AuthService().clearCurrenttravel();
 
-    final availability = ChangeAvailabilityEntitie(status: true);
-    await _driverGetx.execute(
-      ChangeaVailabilityEvent(changeAvailabilityEntitie: availability)
-    );
-    
-    // Usar el servicio de navegación
-    await NavigationService.to.navigateToHome();
-  } catch (e) {
-    print('Error en rejectTravel: $e');
-    // Manejar el error apropiadamente
+      final availability = ChangeAvailabilityEntitie(status: true);
+      await _driverGetx.execute(
+          ChangeaVailabilityEvent(changeAvailabilityEntitie: availability));
+
+      // Usar el servicio de navegación
+      await NavigationService.to.navigateToHome();
+    } catch (e) {
+      print('Error en rejectTravel: $e');
+      // Manejar el error apropiadamente
+    }
   }
-}
-
 
   Future<void> processAndSubmitAmount(String montoStr) async {
     if (montoStr.isEmpty) {
@@ -317,47 +331,76 @@ class AcceptTravelController extends GetxController {
       await travelwithtariffGetx.travelwithtariffGetx(event);
 
       if (travelwithtariffGetx.state.value is TravelwithtariffSuccessfully) {
-                                                                          Get.back();
+        Get.back();
 
         CustomSnackBar.showSuccess(
             'Éxito', 'Monto de tarifa procesado y enviado correctamente');
         await AuthService().clearCurrenttravel();
         await travelByIdController
             .fetchCoDetails(TravelByIdEventDetailsEvent(idTravel: idTravel));
-
       } else if (travelwithtariffGetx.state.value is TravelwithtariffFailure) {
-        CustomSnackBar.showError('Error', 'El viaje ya fue aceptado o falló la solicitud');
-        await rejectTravel();
-        
-      }
-    } catch (e) {
-     
         CustomSnackBar.showError(
             'Error', 'El viaje ya fue aceptado o falló la solicitud');
         await rejectTravel();
+      }
+    } catch (e) {
+      CustomSnackBar.showError(
+          'Error', 'El viaje ya fue aceptado o falló la solicitud');
+      await rejectTravel();
       print('Error en processAndSubmitAmount: $e');
+    }
+  }
+
+  Future<String> getAddressFromCoordinates(double lat, double lng) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        return '${place.street}, ${place.locality}';
+      }
+      return 'Dirección no disponible';
+    } catch (e) {
+      print('Error getting address: $e');
+      return 'Dirección no disponible';
     }
   }
 
   void showInputAmountAlert(
       BuildContext context, AcceptTravelController controller) {
     final RxString inputAmount = "".obs;
-    final travelCost = (controller.travelByIdController.state.value
+    final travel = (controller.travelByIdController.state.value
             is TravelByIdAlertLoaded)
         ? (controller.travelByIdController.state.value as TravelByIdAlertLoaded)
             .travels[0]
-            .cost
-        : '0';
+        : null;
+    final travelCost = travel?.cost ?? '0';
     final RxString buttonText = "Confirmar \$${travelCost.toString()}".obs;
     final RxBool isLoading = false.obs;
+    final RxString startAddress = "Cargando dirección...".obs;
+    final RxString endAddress = "Cargando dirección...".obs;
+
     controller.amountController.clear();
 
-    QuickAlert.show(
-      context: context,
-      type: QuickAlertType.custom,
-      showCancelBtn: false,
-      showConfirmBtn: false,
-      widget: Obx(() {
+    if (travel != null) {
+      getAddressFromCoordinates(
+        double.parse(travel.start_latitude),
+        double.parse(travel.start_longitude),
+      ).then((address) => startAddress.value = address);
+
+      getAddressFromCoordinates(
+        double.parse(travel.end_latitude),
+        double.parse(travel.end_longitude),
+      ).then((address) => endAddress.value = address);
+    }
+
+    showCustomAlert(
+      context: Get.context!,
+      type: CustomAlertType.warning,
+      title: 'Nueva oferta',
+      message: '',
+      confirmText: '',
+      cancelText: null,
+      customWidget: Obx(() {
         if (isLoading.value) {
           return Center(
             child: SpinKitThreeInOut(
@@ -369,6 +412,80 @@ class AcceptTravelController extends GetxController {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/images/mapa/origen.png',
+                          width: 16,
+                          height: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Origen:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Obx(() => Text(
+                                    startAddress.value,
+                                    style: TextStyle(fontSize: 13),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  )),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/images/mapa/destino.png',
+                          width: 16,
+                          height: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Destino:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Obx(() => Text(
+                                    endAddress.value,
+                                    style: TextStyle(fontSize: 13),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  )),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
               RichText(
                 text: TextSpan(
                   text: 'Costo del viaje ',
@@ -389,7 +506,8 @@ class AcceptTravelController extends GetxController {
                         text: 'Monto ofertado: ',
                         children: [
                           TextSpan(
-                            text: '\$${inputAmount.value} MXN',
+                            text:
+                                '\$${inputAmount.value.length > 10 ? inputAmount.value.substring(0, 10) + '...' : inputAmount.value} MXN',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -399,14 +517,12 @@ class AcceptTravelController extends GetxController {
               SizedBox(height: 10),
               TextField(
                 controller: controller.amountController,
-                keyboardType: TextInputType.number,
+  keyboardType: TextInputType.numberWithOptions(decimal: true), // Modificación aquí
                 onChanged: (value) {
                   inputAmount.value = value;
-                  if (value.isNotEmpty) {
-                    buttonText.value = "Ofertar \$${value}";
-                  } else {
-                    buttonText.value = "Confirmar \$${travelCost.toString()}";
-                  }
+                  buttonText.value = value.isNotEmpty
+                      ? "Ofertar \$${value.length > 8 ? value.substring(0, 8) : value}"
+                      : "Confirmar \$${travelCost.toString()}";
                 },
                 decoration: InputDecoration(
                   labelText: 'Importe \$ MXN',
@@ -446,53 +562,42 @@ class AcceptTravelController extends GetxController {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await controller.rejectTravel();
-
-                        Get.back();
-                      },
-                      child: Text("Cancelar"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        textStyle: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
                     child: Obx(() => ElevatedButton(
                           onPressed: () async {
+                                                     if (isLoading.value)
+                              return;
                             String montoStr =
                                 controller.amountController.text.trim();
+                                
+                            if (montoStr.isNotEmpty && double.parse(montoStr) < (travel?.cost as double)) {
+                              QuickAlert.show(
+                                context: Get.context!,
+                                type: QuickAlertType.error,
+                                title: 'Importe inválido',
+                                text: 'El monto ofertado debe ser mayor al costo del viaje',
+                              );
+                              return;
+                            }
                             isLoading.value = true;
-
                             try {
                               controller.amountController.clear();
-
                               if (buttonText.value ==
                                   "Confirmar \$${travelCost.toString()}") {
-                                await controller.acceptTravel(context);
+                                await controller.acceptTravel(Get.context!);
                               } else {
                                 await controller
                                     .processAndSubmitAmount(montoStr);
-
                               }
-                                                      Get.back();
-
-                            } catch (e) {
-                              print("Error en el proceso: $e");
+                              Get.back();
                             } finally {
                               isLoading.value = false;
                               Get.back();
                             }
-                            
                           },
                           child: Text.rich(
                             TextSpan(
                               text: buttonText.value.split(" ")[0] + " ",
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 14),
                               children: [
                                 TextSpan(
                                   text: buttonText.value.split(" ")[1],
@@ -504,10 +609,12 @@ class AcceptTravelController extends GetxController {
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                                 Theme.of(context).colorScheme.buttonColormap2,
-                            padding: EdgeInsets.symmetric(vertical: 15),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 8), // Adjusted padding
                           ),
                         )),
-                  ),
+                  )
                 ],
               ),
             ],

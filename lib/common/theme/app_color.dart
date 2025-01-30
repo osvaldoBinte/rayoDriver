@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 extension CustomColorScheme on ColorScheme {
+    Color get secondary2 =>Color(0xFF007BFF);
   Color get buttonColor => Color.fromARGB(255, 0, 0, 0);
   Color get textButton => Color(0xFFEFC300);
   Color get Statuscancelled => Colors.red;
@@ -32,8 +33,8 @@ extension CustomColorScheme on ColorScheme {
   Color get buttontext => Colors.white;
   Color get fillColor => Color(0xFFD9D9D9);
   Color get whatsApp => Colors.green;
-
-  Color get snackBarerror => Color(0xFFffb3b3);
-  Color get snackBartext => Color(0xFFd1d1d1);
+     Color get avatar => Colors.grey;
+  Color get snackBarerror => Color.fromARGB(255, 24, 24, 24);
+  Color get snackBartext => Color.fromARGB(255, 223, 222, 222);
   Color get snackBartext2 => Color(0xFF7d7d7d);
-}
+  Color get Aleradmiration => Color(0xFFDF0238);}

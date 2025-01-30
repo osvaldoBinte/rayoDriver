@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 import 'package:get/get.dart';
+import 'package:rayo_taxi/features/travel/domain/entities/TravelwithtariffEntitie/travelwithtariff.dart';
 import 'package:rayo_taxi/features/travel/domain/usecases/travelusecase/accepted_travel_usecase.dart';
 import 'package:rayo_taxi/features/travel/domain/usecases/travelusecase/cancel_travel_usecase.dart';
 
@@ -16,7 +17,7 @@ class CanceltravelGetx extends GetxController {
   canceltravel(CancelTravelEvent event) async {
     acceptedtravelState.value = CanceltravelLoading();
     try {
-      await cancelTravelUsecase.execute(event.id_travel);
+      await cancelTravelUsecase.execute(event.travelwithtariff);
       acceptedtravelState.value = CanceltravelSuccessfully();
             message.value = 'Viaje cancelado correctamente';
 

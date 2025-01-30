@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../travel/presentation/page/travel/travel_page.dart';
 import '../get_driver_page.dart';
 import '../login_driver_page.dart';
+
 class HomePage extends StatefulWidget {
   final int selectedIndex;
   HomePage({required this.selectedIndex});
@@ -35,57 +36,67 @@ class _MyHomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-     return WillPopScope(
-      onWillPop: () => controller.handleBackButton(widget.selectedIndex),
-      child: Scaffold(
-      extendBody: true,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Obx(() => IndexedStack(
-              index: controller.selectedIndex.value,
-              children: _pages,
-            )),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Obx(() => Offstage(
-                offstage: MediaQuery.of(context).viewInsets.bottom != 0,
-                child: CurvedNavigationBar(
-                  index: controller.selectedIndex.value,
-                  backgroundColor: Colors.transparent,
-                  color: Theme.of(context).primaryColor,
-                  buttonBackgroundColor: Theme.of(context).colorScheme.CurvedIconback,
-                  height: 75,
-                  items: <Widget>[
-                    _buildIcon(Icons.receipt, 0),
-                    _buildIcon(Icons.car_rental, 1),
-                    _buildIcon(Icons.person, 2),
-                  ],
-                  animationDuration: const Duration(milliseconds: 700),
-                  animationCurve: Curves.easeInOut,
-                  onTap: controller.setIndex,
+    return WillPopScope(
+        onWillPop: () => controller.handleBackButton(widget.selectedIndex),
+        child: Scaffold(
+          extendBody: true,
+          body: SafeArea(
+            child: Stack(
+              children: [
+                Obx(() => IndexedStack(
+                      index: controller.selectedIndex.value,
+                      children: _pages,
+                    )),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Obx(() => Offstage(
+                        offstage: MediaQuery.of(context).viewInsets.bottom != 0,
+                        child: CurvedNavigationBar(
+                          index: controller.selectedIndex.value,
+                          backgroundColor: Colors.transparent,
+                          color: Theme.of(context).primaryColor,
+                          buttonBackgroundColor:
+                              Theme.of(context).colorScheme.CurvedIconback,
+                          height: 75,
+                          items: <Widget>[
+                            _buildIcon('assets/images/taxi/icons-viaje.png', 0),
+                            _buildIcon("assets/images/taxi/icon-taxi.png", 1),
+                            _buildIcon(Icons.person, 2),
+                          ],
+                          animationDuration: const Duration(milliseconds: 700),
+                          animationCurve: Curves.easeInOut,
+                          onTap: controller.setIndex,
+                        ),
+                      )),
                 ),
-              )),
+              ],
             ),
-          ],
-        ),
-      ),
-    ));
+          ),
+        ));
   }
 
-  Widget _buildIcon(IconData icon, int index) {
+  Widget _buildIcon(dynamic icon, int index) {
     return Obx(() {
       bool isSelected = controller.selectedIndex.value == index;
       return Container(
         margin: EdgeInsets.only(bottom: isSelected ? 4 : 0),
         height: isSelected ? 40 : 60,
-        child: Icon(
-          icon,
-          size: isSelected ? 30 : 40,
-          color: isSelected
-              ? Theme.of(context).colorScheme.CurvedNavigationIcono
-              : Theme.of(context).colorScheme.CurvedNavigationIcono2,
-        ),
+        child: icon is IconData
+            ? Icon(
+                icon,
+                size: isSelected ? 30 : 40,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.CurvedNavigationIcono
+                    : Theme.of(context).colorScheme.CurvedNavigationIcono2,
+              )
+            : Image.asset(
+                icon,
+                width: isSelected ? 30 : 40,
+                height: isSelected ? 30 : 40,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.CurvedNavigationIcono
+                    : Theme.of(context).colorScheme.CurvedNavigationIcono2,
+              ),
       );
     });
   }

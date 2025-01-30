@@ -16,6 +16,12 @@
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>Esta aplicación necesita acceder a tu ubicación tanto en primer como segundo plano para mejorar tu experiencia.</string>
 		<string>Rayo Taxi</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>location</string>
+		</array>
+		<key>MBXAccessToken</key>
+		<string>pk.eyJ1Ijoib3N2YWxkb2FuZ2VsIiwiYSI6ImNtNmg4Z2IyaTA5eDIyanBucmE3a2NxcmYifQ.-icwGg_OuNpe0K0C6o6vRQ</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>

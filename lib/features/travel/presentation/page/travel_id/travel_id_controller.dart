@@ -1,17 +1,24 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:rayo_taxi/features/travel/data/models/travel_alert/travel_alert_model.dart';
 import 'package:rayo_taxi/features/travel/data/datasources/mapa_local_data_source.dart';
-
+import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:rayo_taxi/features/travel/data/datasources/travel_local_data_source.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:rayo_taxi/features/travel/data/datasources/travel_local_data_source.dart';
+import 'package:flutter/material.dart';
+import 'package:rayo_taxi/features/travel/data/models/travel_alert/travel_alert_model.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/travel_id/map_data_controller.dart';
 
 class TravelController extends GetxController {
   final TravelAlertModel travel;
+  final MapDataController _mapDataController = Get.find<MapDataController>();
+  final bool isPreview;
 
-  final MapaLocalDataSource _travelLocalDataSource = MapaLocalDataSourceImp();
-  final MapaLocalDataSource _driverTravelLocalDataSource = MapaLocalDataSourceImp();
-  
   final Rx<Set<Marker>> markers = Rx<Set<Marker>>({});
   final Rx<Set<Polyline>> polylines = Rx<Set<Polyline>>({});
   final Rx<LatLng?> startLocation = Rx<LatLng?>(null);
@@ -21,9 +28,11 @@ class TravelController extends GetxController {
   final LatLng center = const LatLng(20.676666666667, -103.39182);
   GoogleMapController? mapController;
 
-  TravelController({required this.travel});
-
-  @override
+  TravelController({
+    required this.travel,
+    this.isPreview = false,
+  });
+ @override
   void onInit() {
     super.onInit();
     initializeMap();
@@ -61,20 +70,22 @@ class TravelController extends GetxController {
     isLoading.value = false;
   }
 
-  void onMapCreated(GoogleMapController controller) {
+   void onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    if (startLocation.value != null && endLocation.value != null) {
-      showBothLocations();
-    }
+    
+    // Add a small delay to ensure markers are placed before zooming
+    Future.delayed(Duration(milliseconds: isPreview ? 500 : 100), () {
+      if (startLocation.value != null && endLocation.value != null) {
+        showBothLocations();
+      }
+    });
   }
 
-  // Nuevo método para mostrar ambas ubicaciones
   void showBothLocations() {
     if (startLocation.value == null || endLocation.value == null || mapController == null) {
       return;
     }
 
-    // Crear los límites que incluyen ambos puntos
     LatLngBounds bounds = LatLngBounds(
       southwest: LatLng(
         min(startLocation.value!.latitude, endLocation.value!.latitude),
@@ -86,44 +97,53 @@ class TravelController extends GetxController {
       ),
     );
 
-    // Añadir padding a los límites
+    // Add padding based on whether it's preview or full view
+    double padding = isPreview ? 50.0 : 100.0;
+    
     mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        bounds,
-        100.0, // padding en píxeles
-      ),
-    );
+      CameraUpdate.newLatLngBounds(bounds, padding),
+    ).catchError((error) {
+      print('Error al ajustar la cámara: $error');
+    });
   }
 
-  Future<void> addMarker(LatLng latLng, bool isStartPlace) async {
-    MarkerId markerId = isStartPlace ? MarkerId('start') : MarkerId('destination');
-    String title = isStartPlace ? 'Inicio' : 'Destino';
+Future<void> addMarker(LatLng latLng, bool isStartPlace) async {
+  MarkerId markerId = isStartPlace ? MarkerId('start') : MarkerId('destination');
+  String title = isStartPlace ? 'Inicio' : 'Destino';
 
-    Marker? existingMarker = markers.value.firstWhere(
-      (m) => m.markerId == markerId,
-      orElse: () => Marker(markerId: MarkerId('')),
-    );
+  BitmapDescriptor markerIcon = await BitmapDescriptor.fromAssetImage(
+    ImageConfiguration(),
+    isStartPlace 
+      ? 'assets/images/mapa/origen.png'
+      : 'assets/images/mapa/destino.png',
+  );
 
-    if (existingMarker.markerId != MarkerId('')) {
-      if (existingMarker.position == latLng) return;
-      markers.value.remove(existingMarker);
-    }
+  Marker? existingMarker = markers.value.firstWhere(
+    (m) => m.markerId == markerId,
+    orElse: () => Marker(markerId: MarkerId('')),
+  );
 
-    markers.value.add(
-      Marker(
-        markerId: markerId,
-        position: latLng,
-        infoWindow: InfoWindow(title: title),
-      ),
-    );
-
-    if (isStartPlace) {
-      startLocation.value = latLng;
-    } else {
-      endLocation.value = latLng;
-    }
-    markers.refresh();
+  if (existingMarker.markerId != MarkerId('')) {
+    if (existingMarker.position == latLng) return;
+    markers.value.remove(existingMarker);
   }
+
+  markers.value.add(
+    Marker(
+      markerId: markerId,
+      position: latLng,
+      icon: markerIcon, // Aquí usamos el icono personalizado
+      infoWindow: InfoWindow(title: title),
+    ),
+  );
+
+  if (isStartPlace) {
+    startLocation.value = latLng;
+  } else {
+    endLocation.value = latLng;
+  }
+  markers.refresh();
+}
 
   List<LatLng> simplifyPolyline(List<LatLng> polyline, double tolerance) {
     if (polyline.length < 3) return polyline;
@@ -139,11 +159,11 @@ class TravelController extends GetxController {
   Future<void> traceRoute() async {
     if (startLocation.value != null && endLocation.value != null) {
       try {
-        await _travelLocalDataSource.getRoute(
+        await _mapDataController.getRoute(
             startLocation.value!, endLocation.value!);
-        String encodedPoints = await _travelLocalDataSource.getEncodedPoints();
+        String encodedPoints = await _mapDataController.getEncodedPoints();
         List<LatLng> polylineCoordinates =
-            _travelLocalDataSource.decodePolyline(encodedPoints);
+            _mapDataController.decodePolyline(encodedPoints);
 
         List<LatLng> simplifiedCoordinates =
             simplifyPolyline(polylineCoordinates, 0.01);
@@ -152,12 +172,11 @@ class TravelController extends GetxController {
         polylines.value.add(Polyline(
           polylineId: PolylineId('route'),
           points: simplifiedCoordinates,
-          color: Colors.blue,
+          color: Colors.black,
           width: 5,
         ));
         polylines.refresh();
 
-        // Llamar a showBothLocations después de trazar la ruta
         if (mapController != null) {
           showBothLocations();
         }

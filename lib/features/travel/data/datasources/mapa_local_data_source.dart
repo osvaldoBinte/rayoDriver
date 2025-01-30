@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:rayo_taxi/common/constants/constants.dart';
+import 'package:rayo_taxi/features/travel/data/models/direction_step.dart';
 import 'package:rayo_taxi/features/travel/data/models/travel_model.dart';
 import 'package:rayo_taxi/features/travel/domain/entities/travel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,8 @@ abstract class MapaLocalDataSource {
       Function(LatLng) moveToLocation, Function(LatLng) addMarker);
   Future<String> getEncodedPoints();
   Future<Map<String, dynamic>> getPlaceDetails(String placeId);
+    List<DirectionStep>? get steps;
+
 }
 
 class MapaLocalDataSourceImp implements MapaLocalDataSource {
@@ -27,40 +30,57 @@ class MapaLocalDataSourceImp implements MapaLocalDataSource {
         String _baseUrl = AppConstants.serverBase;
 
   String? _encodedPoints;
-  
+    List<DirectionStep>? _steps; // Agregar esta línea
 
-@override
-Future<void> getRoute(LatLng startLocation, LatLng endLocation) async {
-  final String url =
-      'https://maps.googleapis.com/maps/api/directions/json?origin=${startLocation.latitude},${startLocation.longitude}&destination=${endLocation.latitude},${endLocation.longitude}&key=$_apiKey&mode=driving&departure_time=now&traffic_model=best_guess';
+  @override
+  Future<void> getRoute(LatLng startLocation, LatLng endLocation) async {
+    final String url =
+        'https://maps.googleapis.com/maps/api/directions/json?'
+        'origin=${startLocation.latitude},${startLocation.longitude}'
+        '&destination=${endLocation.latitude},${endLocation.longitude}'
+        '&key=$_apiKey'
+        '&mode=driving'
+        '&departure_time=now'
+        '&traffic_model=best_guess'
+        '&language=es'; // Añadir el parámetro de idioma
 
-  final response = await http.get(Uri.parse(url));
-  if (response.statusCode == 200) {
-    final result = json.decode(response.body);
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final result = json.decode(response.body);
 
-    // Verificar si hay rutas disponibles
-    if (result['routes'] != null && result['routes'].isNotEmpty) {
-      // Seleccionar la ruta con menor duración en tráfico
-      var shortestRoute = result['routes'][0];
-      int shortestDuration = result['routes'][0]['legs'][0]['duration_in_traffic']['value'];
+      if (result['routes'] != null && result['routes'].isNotEmpty) {
+        var shortestRoute = result['routes'][0];
+        int shortestDuration = result['routes'][0]['legs'][0]['duration_in_traffic']['value'];
 
-      for (var route in result['routes']) {
-        int duration = route['legs'][0]['duration_in_traffic']['value'];
-        if (duration < shortestDuration) {
-          shortestDuration = duration;
-          shortestRoute = route;
+        for (var route in result['routes']) {
+          int duration = route['legs'][0]['duration_in_traffic']['value'];
+          if (duration < shortestDuration) {
+            shortestDuration = duration;
+            shortestRoute = route;
+          }
         }
+
+        _encodedPoints = shortestRoute['overview_polyline']['points'];
+
+        // Procesar los pasos de la ruta
+        if (shortestRoute['legs'] != null && shortestRoute['legs'].isNotEmpty) {
+          final steps = shortestRoute['legs'][0]['steps'] as List;
+          _steps = steps.map((step) => DirectionStep(
+            instruction: step['html_instructions'],
+            distance: step['distance']['text'],
+            duration: step['duration']['text'],
+            maneuver: step['maneuver'] ?? '',
+          )).toList();
+        }
+      } else {
+        throw Exception('No se encontraron rutas disponibles.');
       }
-
-      _encodedPoints = shortestRoute['overview_polyline']['points'];
     } else {
-      throw Exception('No se encontraron rutas disponibles.');
+      throw Exception('Error al obtener la ruta');
     }
-  } else {
-    throw Exception('Error al obtener la ruta');
   }
-}
 
+  List<DirectionStep>? get steps => _steps;
 
   @override
   List<LatLng> decodePolyline(String encoded) {
@@ -204,7 +224,7 @@ Future<void> getRoute(LatLng startLocation, LatLng endLocation) async {
     String? savedToken = await _getToken();
 
     var response = await http.post(
-      Uri.parse('$_baseUrl/app_clients/travels/travels'),
+      Uri.parse('$_baseUrl/api/app_clients/travels/travels'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -241,7 +261,7 @@ Future<void> getRoute(LatLng startLocation, LatLng endLocation) async {
       if (storedData != null && storedData.isNotEmpty) {
         for (String id in storedData) {
           await http.delete(
-            Uri.parse('$_baseUrl/app_clients/travels/travels/Student/$id'),
+            Uri.parse('$_baseUrl/api/app_clients/travels/travels/Student/$id'),
           );
         }
 
@@ -262,7 +282,7 @@ Future<void> getRoute(LatLng startLocation, LatLng endLocation) async {
     if (connection) {
       try {
         final http.Response response = await http.put(
-          Uri.parse('$_baseUrl/app_clients/travels/travels/cancel/$id'),
+          Uri.parse('$_baseUrl/api/app_clients/travels/travels/cancel/$id'),
           headers: {
             'Content-Type': 'application/json',
             'x-token': savedToken ?? '',

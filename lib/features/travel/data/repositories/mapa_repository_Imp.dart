@@ -4,52 +4,52 @@ import 'package:rayo_taxi/features/travel/domain/entities/travel.dart';
 import 'package:rayo_taxi/features/travel/domain/repository/mapa_repository.dart';
 
 class MapaRepositoryImp implements MapaRepository{
-  final MapaLocalDataSource travelLocalDataSource;
-  MapaRepositoryImp({required this.travelLocalDataSource});
+  final MapaLocalDataSource mapaLocalDataSource;
+  MapaRepositoryImp({required this.mapaLocalDataSource});
 
   @override
   double calculateDistance(LatLng start, LatLng end) {
-   return  travelLocalDataSource.calculateDistance(start, end);
+   return  mapaLocalDataSource.calculateDistance(start, end);
   }
 
   @override
   List<LatLng> decodePolyline(String encoded) {
-   return  travelLocalDataSource.decodePolyline(encoded);
+   return  mapaLocalDataSource.decodePolyline(encoded);
   }
 
   @override
   double degreesToRadians(double degrees) {
-    return  travelLocalDataSource.degreesToRadians(degrees);
+    return  mapaLocalDataSource.degreesToRadians(degrees);
   }
 
   @override
   Future<String> getEncodedPoints() async {
-    return await travelLocalDataSource.getEncodedPoints();
+    return await mapaLocalDataSource.getEncodedPoints();
   }
 
   @override
   Future<void> getPlaceDetailsAndMove(String placeId, Function(LatLng p1) moveToLocation, Function(LatLng p1) addMarker) async {
-    return await travelLocalDataSource.getPlaceDetailsAndMove(placeId, moveToLocation, addMarker);
+    return await mapaLocalDataSource.getPlaceDetailsAndMove(placeId, moveToLocation, addMarker);
   }
 
   @override
   Future<List> getPlacePredictions(String input) async {
-    return await travelLocalDataSource.getPlacePredictions(input);
+    return await mapaLocalDataSource.getPlacePredictions(input);
   }
 
   @override
   Future<void> getRoute(LatLng startLocation, LatLng endLocation) async {
-    return await travelLocalDataSource.getRoute(startLocation, endLocation);
+    return await mapaLocalDataSource.getRoute(startLocation, endLocation);
   }
 
   @override
   Future<void> poshTravel(Travel travel) async {
-    return await travelLocalDataSource.poshTravel(travel);
+    return await mapaLocalDataSource.poshTravel(travel);
   }
   
   @override
  Future<void> deleteTravel(String id, bool connection) async {
-    return await travelLocalDataSource.deleteTravel(id,connection);
+    return await mapaLocalDataSource.deleteTravel(id,connection);
   }
 
 }

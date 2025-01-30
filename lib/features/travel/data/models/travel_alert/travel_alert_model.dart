@@ -1,27 +1,28 @@
 import 'package:rayo_taxi/features/travel/domain/entities/travelAlertEntitie/travel_alert.dart';
 
 class TravelAlertModel extends TravelAlert {
-  TravelAlertModel({
-    required int id,
-    required String date,
-    required String start_longitude,
-    required String start_latitude,
-    required String end_longitude,
-    required String end_latitude,
-    required num kilometers,
-    required int id_client,
-    required int id_company,
-    required int id_status,
-    required String status,
-    required double cost,
-    String? client,
-    final String? tarifa,
-    required String waiting_for,
-    required String id_travel_driver,
-    required String path_photo,
-  required String plates,
-    
-  }) : super(
+  TravelAlertModel(
+      {required int id,
+      required String date,
+      required String start_longitude,
+      required String start_latitude,
+      required String end_longitude,
+      required String end_latitude,
+      required num kilometers,
+      required int id_client,
+      required int id_company,
+      required int id_status,
+      required String status,
+      required double cost,
+      String? client,
+      final String? tarifa,
+      required String waiting_for,
+      required String id_travel_driver,
+      required String path_photo,
+      required String plates,
+      required int qualification,
+      })
+      : super(
             id: id,
             date: date,
             start_longitude: start_longitude,
@@ -38,8 +39,10 @@ class TravelAlertModel extends TravelAlert {
             tarifa: tarifa,
             waiting_for: waiting_for,
             id_travel_driver: id_travel_driver,
-            path_photo:path_photo,
-            plates:plates);
+            path_photo: path_photo,
+            plates: plates,
+            qualification: qualification,
+           );
   factory TravelAlertModel.fromJson(Map<String, dynamic> json) {
     return TravelAlertModel(
         id: json['id'],
@@ -59,7 +62,10 @@ class TravelAlertModel extends TravelAlert {
         waiting_for: json['waiting_for'],
         id_travel_driver: json['id_travel_driver'] ?? '0',
         path_photo: json['path_photo'] ?? '',
-        plates: json['plates'] ?? '');
+        plates: json['plates'] ?? '',
+        qualification: json['qualification'] ?? 0,
+       // model: json['model']??''
+        );
   }
 
   factory TravelAlertModel.fromEntity(TravelAlert travelAlert) {
@@ -81,7 +87,8 @@ class TravelAlertModel extends TravelAlert {
       waiting_for: travelAlert.waiting_for,
       id_travel_driver: travelAlert.id_travel_driver,
       path_photo: travelAlert.path_photo,
-      plates:travelAlert.plates
+      plates: travelAlert.plates,
+      qualification: travelAlert.qualification,
     );
   }
 
@@ -102,9 +109,10 @@ class TravelAlertModel extends TravelAlert {
       'client': client,
       'tarifa': tarifa,
       'waiting_for': waiting_for,
-      'id_travel_driver' :id_travel_driver,
-         'path_photo': path_photo,
-      'plates':plates
+      'id_travel_driver': id_travel_driver,
+      'path_photo': path_photo,
+      'plates': plates,
+      'qualification':qualification,
     };
   }
 }

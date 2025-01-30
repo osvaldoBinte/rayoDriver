@@ -16,7 +16,7 @@ abstract class TravelLocalDataSource {
 
   Future<void> acceptedTravel(int? id_travel);
   Future<void> driverArrival(int? id_travel);
-  Future<void> cancelTravel(int? id_travel);
+  Future<void> cancelTravel(Travelwithtariff travelwithtariff);
   Future<void> acceptWithCounteroffer(Travelwithtariff travelwithtariff);
   Future<void> offerNegotiation(Travelwithtariff travelwithtariff);
 
@@ -55,7 +55,7 @@ class TravelLocalDataSourceImp implements TravelLocalDataSource {
     device = Device(id_device: token);
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/users/drivers/device'),
+      Uri.parse('$_baseUrl/api/app_drivers/users/drivers/device'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -99,9 +99,8 @@ class TravelLocalDataSourceImp implements TravelLocalDataSource {
           'Content-Type': 'application/json',
         };
 
-        print('Realizando la solicitud a $_baseUrl/auth/renew...');
         var response = await http.get(
-          Uri.parse('$_baseUrl/app_drivers/users/auth/renew'),
+          Uri.parse('$_baseUrl/api/app_drivers/users/auth/renew'),
           headers: headers,
         );
 
@@ -201,7 +200,7 @@ class TravelLocalDataSourceImp implements TravelLocalDataSource {
         };
 
         var response = await http.get(
-          Uri.parse('$_baseUrl/app_drivers/users/auth/renew'),
+          Uri.parse('$_baseUrl/api/app_drivers/users/auth/renew'),
           headers: headers,
         );
 
@@ -262,7 +261,7 @@ Future<List<TravelAlertModel>> getbyIdtravelid(
       };
 
       var response = await http.get(
-        Uri.parse('$_baseUrl/app_drivers/travels/travels/$idTravel'), 
+        Uri.parse('$_baseUrl/api/app_drivers/travels/travels/$idTravel'), 
         headers: headers,
       );
 
@@ -329,7 +328,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
   @override
   Future<String?> fetchDeviceId() async {
     try {
-      final String url = '$_baseUrl/app_drivers/users/auth/renew';
+      final String url = '$_baseUrl/api/app_drivers/users/auth/renew';
       print('Realizando la solicitud a $url...');
 
       String? token = await _getToken();
@@ -375,7 +374,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
     device = Device(id_device: token);
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/accepted/$id_travel'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/accepted/$id_travel'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -408,7 +407,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
     device = Device(id_device: token);
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/end/$id_travel'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/end/$id_travel'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -441,7 +440,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
     device = Device(id_device: token);
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/start/$id_travel'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/start/$id_travel'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -471,7 +470,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
     //device = Device(id_device: token);
 
     var response = await http.post(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/notify/$id_travel'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/notify/$id_travel'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -498,7 +497,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
     String? savedToken = await _getToken();
 
     var response = await http.post(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/confirmTravelWithTariff'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/confirmTravelWithTariff'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -522,15 +521,17 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
   }
   
   @override
-  Future<void> cancelTravel(int? id_travel) async {
+  Future<void> cancelTravel(Travelwithtariff travelwithtariff) async {
     String? savedToken = await _getToken();
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/cancelTravel/$id_travel'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/rejectTravelStarted'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
       },
+            body: jsonEncode(TravelwithtariffModal.fromEntity(travelwithtariff).toJson()),
+
     );
 
     dynamic body = jsonDecode(response.body);
@@ -554,7 +555,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
 
     var response = await http.put(
       Uri.parse(
-          '$_baseUrl/app_drivers/travels/travels/acceptWithCounteroffer/'),
+          '$_baseUrl/api/app_drivers/travels/travels/acceptWithCounteroffer/'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -583,7 +584,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
    String? savedToken = await _getToken();
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/offerNegotiation'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/offerNegotiation'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -611,7 +612,7 @@ Future<List<TravelAlertModel>> _loadtravelbyIDFromLocal(
     String? savedToken = await _getToken();
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/travels/travels/rejectTravelOffer'),
+      Uri.parse('$_baseUrl/api/app_drivers/travels/travels/rejectTravelOffer'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',

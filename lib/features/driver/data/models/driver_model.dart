@@ -15,7 +15,8 @@ class DriverModel extends Driver {
     String? brand,
     String? year,
     String? model,
-    String? phone_support
+    String? phone_support,
+    String? plates
   }) : super(
           id: id,
           name: name,
@@ -30,7 +31,8 @@ class DriverModel extends Driver {
           brand: brand,
           year: year,
           model: model,
-          phone_support:phone_support
+          phone_support:phone_support,
+          plates:plates
         );
 
   factory DriverModel.fromJson(Map<String, dynamic> json) {
@@ -54,7 +56,8 @@ class DriverModel extends Driver {
       brand: json['brand'] ?? '',
       year: json['year'] ?? '',
       model: json['model'] ?? '',
-      phone_support:json['phone_support'] ?? ''
+      phone_support:json['phone_support'] ?? '',
+      plates:json['plates'] ?? ''
     );
   }
 
@@ -73,7 +76,8 @@ class DriverModel extends Driver {
       brand: client.brand,
       year: client.year,
       model: client.model,
-      phone_support:client.phone_support
+      phone_support:client.phone_support,
+      plates:client.plates
     );
   }
 
@@ -92,7 +96,8 @@ class DriverModel extends Driver {
       'brand': brand,
       'year': year,
       'model': model,
-      'phone_support':phone_support
+      'phone_support':phone_support,
+      'plates':plates
     };
   }
 }

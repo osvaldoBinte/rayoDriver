@@ -4,7 +4,6 @@ part of 'cancelTravel_getx.dart';
 abstract class CanceltravelEvent {}
 
 class CancelTravelEvent extends CanceltravelEvent {
-    final int? id_travel;
-
-  CancelTravelEvent({required this.id_travel});
+  final Travelwithtariff travelwithtariff;
+  CancelTravelEvent({required this.travelwithtariff});
 }

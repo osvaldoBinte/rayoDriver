@@ -4,6 +4,8 @@ import 'package:quickalert/quickalert.dart';
 import 'package:rayo_taxi/common/settings/routes_names.dart';
 import 'package:rayo_taxi/features/driver/domain/entities/driver.dart';
 import 'package:rayo_taxi/features/driver/domain/usecases/login_driver_usecase.dart';
+import 'package:rayo_taxi/features/driver/presentation/pages/login_driver_page.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/widgets/custom_alert_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rayo_taxi/features/driver/presentation/pages/home/home_page.dart';
 
@@ -65,14 +67,36 @@ Get.toNamed(RoutesNames.homePage, arguments: {'selectedIndex': 1});
     }
   }
 
-  // Método de cierre de sesión
-  void logout() {
-    state.value = LogindriverInitial();  
+  void logout() async{
+    
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    state.value = LogindriverInitial();
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove('auth_token');
     });
+    await prefs.remove('auth_token');
+
+    await Get.offAll(() => LoginDriverPage());
+
   }
 
+  Future<void> logoutAlert() async {
+    showCustomAlert(
+      context: Get.context!,
+      type: CustomAlertType.confirm,
+      title: 'Cerrar sesión',
+      message: '¿Estás seguro de cerrar tu sesión?',
+      confirmText: 'Sí',
+      cancelText: 'No',
+      onConfirm: () async {
+        logout();
+      },
+      onCancel: () {
+        Navigator.of(Get.context!).pop();
+      },
+    );
+  }
   @override
   void onClose() {
     // Liberar recursos

@@ -8,7 +8,7 @@ import 'package:rayo_taxi/main.dart';
 class AppThemeCustom {
      final ColorScheme colorScheme = ColorScheme.fromSwatch().copyWith(
       primary: Color.fromARGB(255, 254, 255, 255),
-      secondary: Color(0xFF007BFF),
+      secondary: Color(0xFFEFC300),
     );
 
     ThemeData getTheme({required ThemeMode mode, required BuildContext context}) {

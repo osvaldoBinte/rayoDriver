@@ -1,4 +1,4 @@
-// notificationcontroller.dart
+// notification_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -12,14 +12,14 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
   var lastNotificationTitle = ''.obs;
   var lastNotificationBody = ''.obs;
   var lastNotificationType = ''.obs;
+  var lastTravelId = ''.obs; // Agregamos esta variable para almacenar el ID
 
   static const String _lastNotificationKey = 'lastNotification';
-
 
   @override
   void onInit() {
     super.onInit();
-    loadLastNotification(); 
+    loadLastNotification();
 
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message != null) {
@@ -27,9 +27,6 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       }
     });
 
-    // Ya que en onBackgroundMessage sólo guardamos en prefs,
-    // al volver a foreground, volveremos a cargar lo que haya allí.
-    // onMessage y onMessageOpenedApp ya actualizan normalmente.
     FirebaseMessaging.onMessage.listen((message) {
       updateNotification(message);
     });
@@ -47,43 +44,47 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
     WidgetsBinding.instance.removeObserver(this);
   }
 
- @override
-void didChangeAppLifecycleState(AppLifecycleState state) async {
-  if (state == AppLifecycleState.resumed) {
-    print('DEBUG: App resumed. Loading last notification from SharedPreferences.');
-    await loadLastNotification(); // Forzar la carga desde SharedPreferences
-  }
-}
-
-  
-
-Future<void> updateNotification(RemoteMessage message) async {
-  final notification = message.notification;
-  if (notification != null) {
-    lastNotificationTitle.value = notification.title ?? 'Notificación';
-    lastNotificationBody.value = notification.body ?? 'Tienes una nueva notificación';
-    lastNotification.value = message; // Ensure this is set
-print('DEBUG: updateNotification ${notification.title}');
-    // Force set notification type
-    if (notification.title == 'Nuevo precio para tu viaje') {
-      lastNotificationType.value = 'new_price';
-    } else if (notification.title == 'Tu viaje fue aceptado' ||
-               notification.title == "Contraoferta aceptada por el conductor") {
-      lastNotificationType.value = 'trip_accepted';
-    } else {
-      lastNotificationType.value = 'general';
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      print('DEBUG: App resumed. Loading last notification from SharedPreferences.');
+      await loadLastNotification();
     }
-
-    await _saveLastNotification(message);
   }
 
-}
+  Future<void> updateNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification != null) {
+      lastNotificationTitle.value = notification.title ?? 'Notificación';
+      lastNotificationBody.value = notification.body ?? 'Tienes una nueva notificación';
+      lastNotification.value = message;
+      
+      // Extraer el ID del viaje de los datos de la notificación
+      if (message.data.containsKey('travel_id')) {
+        lastTravelId.value = message.data['travel_id'];
+        print('DEBUG: Travel ID from notification: ${lastTravelId.value}');
+      }
+
+      // Determinar el tipo de notificación
+      if (notification.title == 'Nuevo precio para tu viaje') {
+        lastNotificationType.value = 'new_price';
+      } else if (notification.title == 'Tu viaje fue aceptado' ||
+                 notification.title == "Contraoferta aceptada por el conductor") {
+        lastNotificationType.value = 'trip_accepted';
+      } else {
+        lastNotificationType.value = 'general';
+      }
+
+      await _saveLastNotification(message);
+    }
+  }
 
   Future<void> clearNotification() async {
     lastNotificationTitle.value = '';
     lastNotificationBody.value = '';
     lastNotificationType.value = '';
     lastNotification.value = null;
+    lastTravelId.value = ''; // Limpiar también el ID
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_lastNotificationKey);
   }
@@ -93,25 +94,29 @@ print('DEBUG: updateNotification ${notification.title}');
     final messageJson = message.toMap();
     await prefs.setString(_lastNotificationKey, jsonEncode(messageJson));
   }
-  Future<void> loadLastNotification() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.reload(); 
-    final storedMessage = prefs.getString(_lastNotificationKey);
 
-    if (storedMessage != null) {
-      final Map<String, dynamic> messageMap = jsonDecode(storedMessage);
-      final message = RemoteMessage.fromMap(messageMap);
-      lastNotification.value = message; 
-      print('DEBUG: Loaded last notification - Title: ${message.notification?.title}, Body: ${message.notification?.body}');
-    } else {
-      print('DEBUG: No stored notification found in SharedPreferences.');
+  Future<void> loadLastNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      final storedMessage = prefs.getString(_lastNotificationKey);
+
+      if (storedMessage != null) {
+        final Map<String, dynamic> messageMap = jsonDecode(storedMessage);
+        final message = RemoteMessage.fromMap(messageMap);
+        lastNotification.value = message;
+        
+        // Cargar el ID del viaje desde los datos almacenados
+        if (message.data.containsKey('travel_id')) {
+          lastTravelId.value = message.data['travel_id'];
+        }
+        
+        print('DEBUG: Loaded last notification - Title: ${message.notification?.title}, Body: ${message.notification?.body}, TravelID: ${lastTravelId.value}');
+      } else {
+        print('DEBUG: No stored notification found in SharedPreferences.');
+      }
+    } catch (e) {
+      print('ERROR in loadLastNotification: $e');
     }
-  } catch (e) {
-    print('ERROR in loadLastNotification: $e');
   }
 }
-
-
-}
-

@@ -8,7 +8,7 @@ abstract class TravelRepository {
   Future<void> acceptedTravel(int? id_travel);
   Future<void> startTravel(int? id_travel);
   Future<void> endTravel(int? id_travel);
-  Future<void> cancelTravel(int? id_travel);
+   Future<void> cancelTravel(Travelwithtariff travelwithtariff);
   Future<void> acceptWithCounteroffer(Travelwithtariff travelwithtariff);
   Future<void> offerNegotiation(Travelwithtariff travelwithtariff);
  Future<void> rejectTravelOffer(Travelwithtariff travelwithtariff);

@@ -32,7 +32,7 @@ class DriverLocalDataSourceImp implements DriverLocalDataSource {
       final DeviceGetx _driverGetx = Get.find<DeviceGetx>();
 
     var response = await http.post(
-      Uri.parse('$_baseUrl/app_drivers/users/auth/login'),
+      Uri.parse('$_baseUrl/api/app_drivers/users/auth/login'),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -79,7 +79,7 @@ Future<List<DriverModel>> getDriver(bool conection) async {
       };
 
       var response = await http.get(
-        Uri.parse('$_baseUrl/app_drivers/users/auth/renew'),
+        Uri.parse('$_baseUrl/api/app_drivers/users/auth/renew'),
         headers: headers,
       );
 
@@ -123,7 +123,7 @@ Future<List<DriverModel>> _loadDrivesFromLocal(
  String? savedToken = await _getToken();
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/users/drivers/remove'),
+      Uri.parse('$_baseUrl/api/app_drivers/users/drivers/remove'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -152,7 +152,7 @@ Future<List<DriverModel>> _loadDrivesFromLocal(
    
 
     var response = await http.put(
-      Uri.parse('$_baseUrl/app_drivers/users/drivers/change/availability'),
+      Uri.parse('$_baseUrl/api/app_drivers/users/drivers/change/availability'),
       headers: {
         'Content-Type': 'application/json',
         'x-token': savedToken ?? '',
@@ -186,7 +186,7 @@ Future<List<DriverModel>> _loadDrivesFromLocal(
     }
    try{
       var response = await http.get(
-        Uri.parse('$_baseUrl/app_drivers/users/auth/renew'),
+        Uri.parse('$_baseUrl/api/app_drivers/users/auth/renew'),
         headers: {
           'Content-Type': 'application/json',
           'x-token': token,

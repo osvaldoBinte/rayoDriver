@@ -13,6 +13,7 @@ class Driver {
   String?year;
   String?model;
   String? phone_support;
+  String? plates;
   Driver({
     this.id,
     this.name,
@@ -27,6 +28,7 @@ class Driver {
     this.brand,
     this.year,
     this.model,
-    this.phone_support
+    this.phone_support,
+    this.plates
   });
 }

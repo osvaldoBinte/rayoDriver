@@ -7,6 +7,7 @@ import 'package:quickalert/quickalert.dart';
 import 'package:rayo_taxi/features/driver/domain/usecases/remove_data_account_usecase.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/login/logindriver_getx.dart';
 import 'package:rayo_taxi/features/driver/presentation/pages/login_driver_page.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/widgets/custom_alert_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 part 'removeDataAccount_event.dart';
 part 'removeDataAccount_state.dart';
@@ -65,27 +66,25 @@ class RemovedataaccountGetx extends GetxController {
   }
 
   Future<void> _logout() async {
-    
     _loginGetx.logout();
-       await Get.offAll(() => LoginDriverPage());
+    await Get.offAll(() => LoginDriverPage());
   }
 
   void confirmDeleteAccount() {
-    // Muestra alerta de confirmación
-    QuickAlert.show(
+    showCustomAlert(
       context: Get.context!,
-      type: QuickAlertType.confirm,
-      title: 'Eliminar Cuenta',
-      text: '¿Estás seguro de que deseas eliminar tu cuenta?',
-      confirmBtnText: 'Sí, eliminar',
-      cancelBtnText: 'Cancelar',
-      onConfirmBtnTap: () async {
-        Get.back(); // Cierra la alerta
-        await Future.delayed(Duration(milliseconds: 300)); // Espera breve
+      type: CustomAlertType.confirm,
+      title: 'Cerrar sesión',
+      message: '¿Estás seguro de eliminar tu cuenta?',
+      confirmText: 'Sí',
+      cancelText: 'No',
+      onConfirm: () async {
+        Get.back();
+        await Future.delayed(Duration(milliseconds: 300));
         await removedataaccountGetx(RemoveDataaccountEvent());
       },
-      onCancelBtnTap: () {
-        Get.back(); // Cierra la alerta
+      onCancel: () {
+        Navigator.of(Get.context!).pop();
       },
     );
   }

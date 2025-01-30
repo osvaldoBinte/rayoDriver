@@ -55,7 +55,7 @@ Future<void> requestLocationPermission() async {
 
       Get.offAll(() => LoginDriverPage());
     } else if (token == true ) {
-      Get.toNamed(RoutesNames.homePage, arguments: {'selectedIndex': 0});
+      Get.toNamed(RoutesNames.homePage, arguments: {'selectedIndex': 1});
 
     
           print('holla des de home ture ');

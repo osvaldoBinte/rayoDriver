@@ -60,8 +60,8 @@ class TravelRepositoryImp implements TravelRepository {
     return await travelLocalDataSource.confirmTravelWithTariff(travel);
   }
 
-  Future<void> cancelTravel(int? id_travel) async {
-    return await travelLocalDataSource.cancelTravel(id_travel);
+  Future<void> cancelTravel(Travelwithtariff travelwithtariff)  async {
+    return await travelLocalDataSource.cancelTravel(travelwithtariff);
   }
   
   @override

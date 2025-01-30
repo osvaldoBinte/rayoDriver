@@ -25,13 +25,12 @@ static void showError(String title, String message) {
     Get.closeAllSnackbars();
   }
   
-  final colorScheme = Get.theme.colorScheme;
 
   Get.snackbar(
     title,
     message,
-    backgroundColor: colorScheme.error, 
-    colorText: colorScheme.snackBartext,
+    backgroundColor: Get.theme.colorScheme.snackBarerror, 
+    colorText: Get.theme.colorScheme.snackBartext,
     snackPosition: SnackPosition.TOP,
     duration: const Duration(seconds: 3),
   );

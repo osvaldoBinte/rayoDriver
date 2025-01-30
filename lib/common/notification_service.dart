@@ -6,21 +6,24 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:quickalert/quickalert.dart';
+import 'package:rayo_taxi/common/app/splash_screen.dart';
+import 'package:rayo_taxi/common/routes/%20navigation_service.dart';
 import 'package:rayo_taxi/common/settings/routes_names.dart';
 import 'package:rayo_taxi/features/AuthS/AuthService.dart';
+import 'package:rayo_taxi/features/travel/data/models/travel_alert/travel_alert_model.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/TravelById/travel_by_id_alert_getx.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/TravelsAlert/travels_alert_getx.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/currentTravel/current_travel_getx.dart';
 import 'package:rayo_taxi/features/travel/presentation/notificationcontroller/notification_controller.dart';
 import 'package:rayo_taxi/features/travel/presentation/page/accept_travel/accept_travel_page.dart';
 import 'package:rayo_taxi/features/travel/presentation/page/widgets/customSnacknar.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/widgets/custom_alert_dialog.dart';
 import 'package:rayo_taxi/firebase_options.dart';
 import 'package:rayo_taxi/features/travel/domain/entities/TravelwithtariffEntitie/travelwithtariff.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/acceptWithCounteroffe/accept_with_counteroffe_getx.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/offerNegotiation/offer_negotiation_getx.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/rejectTravelOffer/reject_travel_offer_getx.dart';
 import 'package:rayo_taxi/common/theme/app_color.dart';
-
 
 class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -30,6 +33,7 @@ class NotificationService {
   final GlobalKey<NavigatorState> navigatorKey;
   final currentTravelGetx = Get.find<CurrentTravelGetx>();
   final TravelsAlertGetx travelAlertGetx = Get.find<TravelsAlertGetx>();
+      final travelByIdController = Get.find<TravelByIdAlertGetx>();
 
   RemoteMessage? initialMessage;
 
@@ -60,7 +64,6 @@ class NotificationService {
           (NotificationResponse notificationResponse) async {
         final String? payload = notificationResponse.payload;
         if (payload != null && payload.isNotEmpty) {
-          
           Map<String, dynamic> data = json.decode(payload);
           String? title = data['notification']?['title'] ?? data['title'];
           _handleNotificationClick(data, title);
@@ -83,14 +86,30 @@ class NotificationService {
 
     FirebaseMessaging.onMessage.listen(_onMessageHandler);
 
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('Background notification clicked: ${message.data}');
       _handleNotificationNavigation(message);
     });
-  
+
+    ever(currentTravelGetx.state, (state) {
+      if (state is TravelAlertLoaded) {
+        final travel = state.travels.firstOrNull;
+        if (travel != null) {
+          _handleTravelStateChange(travel);
+        }
+      }
+    });
   }
 
-  
+  Future<void> _handleTravelStateChange(TravelAlertModel travel) async {
+    if (travel.waiting_for == "2" && travel.id_status == 6) {
+      //  await Get.find<NavigationService>().navigateToHome(selectedIndex: 1);
+
+      if (Get.context != null) {
+        showNewPriceDialog(Get.context!);
+      }
+    }
+  }
 
   void _handleNotificationNavigation(RemoteMessage message) {
     final NotificationController notificationController =
@@ -118,8 +137,8 @@ class NotificationService {
           print('Error: travelId is null');
         }
       } else {
+        
         print('Navigating to HomePage');
-        navigateToHome();
         }
     }
   }
@@ -141,33 +160,35 @@ class NotificationService {
         if (title == 'Nuevo precio del viaje' ||
             title == 'Propuesta de viaje rechazada' ||
             title == 'Nuevo viaje!!') {
-                    _showQuickAlert(context, title, body);
-
+          _showQuickAlert(context, title, body);
         } else if (title == 'Nuevo precio para tu viaje') {
-     await _waitForOperationsToComplete(
-      currentTravelGetx: Get.find<CurrentTravelGetx>(),
-      travelByIdController: Get.find<TravelByIdAlertGetx>(),
-       travelAlertGetx:  Get.find<TravelsAlertGetx>(),
-      travelId: travelId,
-    );
-
-    if (context.mounted) { 
-      showNewPriceDialog(context);
-    }
-          
-        }else if (body == 'El cliente ha aceptado la propuesta para el viaje.' ||
+          await _waitForOperationsToComplete(
+            currentTravelGetx: Get.find<CurrentTravelGetx>(),
+            travelByIdController: Get.find<TravelByIdAlertGetx>(),
+            travelAlertGetx: Get.find<TravelsAlertGetx>(),
+            travelId: travelId,
+          );
+        } else if (body ==
+                'El cliente ha aceptado la propuesta para el viaje.' ||
             title == "Contraoferta aceptada por el cliente") {
           _waitForOperationsToComplete(
-      currentTravelGetx: Get.find<CurrentTravelGetx>(),
-      travelByIdController: Get.find<TravelByIdAlertGetx>(),
-       travelAlertGetx:  Get.find<TravelsAlertGetx>(),
-      travelId: travelId,
-    );
+            currentTravelGetx: Get.find<CurrentTravelGetx>(),
+            travelByIdController: Get.find<TravelByIdAlertGetx>(),
+            travelAlertGetx: Get.find<TravelsAlertGetx>(),
+            travelId: travelId,
+          );
 
-    if (context.mounted) { 
-          showacept(context, title, body);
-    }
-        }  else {
+          if (context.mounted) {
+            showacept(context, title, body);
+          }
+        }
+        if (title == 'Propuesta de viaje rechazada') {
+          
+          if (Get.context != null) {
+            _showQuickAlert(context, title, body);
+          }
+         
+        } else {
           print('El contexto es nulo o el título no coincide');
         }
       }
@@ -175,55 +196,56 @@ class NotificationService {
       _showLocalNotification(message);
     }
   }
-Future<void> _waitForOperationsToComplete({
-  required CurrentTravelGetx currentTravelGetx,
-  required TravelByIdAlertGetx travelByIdController,
-  required TravelsAlertGetx travelAlertGetx,
-  required int? travelId,
-}) async {
-  final currentTravelCompleter = Completer();
-  final travelByIdCompleter = Completer();
-  final travelAlerCompleter = Completer();
 
-  ever(currentTravelGetx.state, (state) {
-    if (state is TravelAlertLoaded || state is TravelAlertFailure) {
-      if (!currentTravelCompleter.isCompleted) {
-        currentTravelCompleter.complete();
+  Future<void> _waitForOperationsToComplete({
+    required CurrentTravelGetx currentTravelGetx,
+    required TravelByIdAlertGetx travelByIdController,
+    required TravelsAlertGetx travelAlertGetx,
+    required int? travelId,
+  }) async {
+    final currentTravelCompleter = Completer();
+    final travelByIdCompleter = Completer();
+    final travelAlerCompleter = Completer();
+
+    ever(currentTravelGetx.state, (state) {
+      if (state is TravelAlertLoaded || state is TravelAlertFailure) {
+        if (!currentTravelCompleter.isCompleted) {
+          currentTravelCompleter.complete();
+        }
       }
-    }
-  });
+    });
 
-  ever(travelByIdController.state, (state) {
-    if (state is TravelByIdAlertLoaded || state is TravelByIdAlertFailure) {
-      if (!travelByIdCompleter.isCompleted) {
-        travelByIdCompleter.complete();
+    ever(travelByIdController.state, (state) {
+      if (state is TravelByIdAlertLoaded || state is TravelByIdAlertFailure) {
+        if (!travelByIdCompleter.isCompleted) {
+          travelByIdCompleter.complete();
+        }
       }
-    }
-  });
- ever(travelAlertGetx.state, (state) {
-    if (state is TravelsAlertLoaded || state is TravelsAlertFailure) {
-      if (!travelAlerCompleter.isCompleted) {
-        travelAlerCompleter.complete();
+    });
+    ever(travelAlertGetx.state, (state) {
+      if (state is TravelsAlertLoaded || state is TravelsAlertFailure) {
+        if (!travelAlerCompleter.isCompleted) {
+          travelAlerCompleter.complete();
+        }
       }
-    }
-  });
-  currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
-  travelByIdController.fetchCoDetails(TravelByIdEventDetailsEvent(idTravel: travelId));
-  travelAlertGetx.fetchCoDetails(FetchtravelsDetailsEvent());
+    });
+    currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
+    travelByIdController
+        .fetchCoDetails(TravelByIdEventDetailsEvent(idTravel: travelId));
+    travelAlertGetx.fetchCoDetails(FetchtravelsDetailsEvent());
 
-  await Future.wait([
-    currentTravelCompleter.future,
-    travelByIdCompleter.future,
-    travelAlerCompleter.future
-  ]);
-}
-
+    await Future.wait([
+      currentTravelCompleter.future,
+      travelByIdCompleter.future,
+      travelAlerCompleter.future
+    ]);
+  }
 
   void showacept(BuildContext context, String title, String body) {
     currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
 
     QuickAlert.show(
-      context: context,
+      context: Get.context!,
       type: QuickAlertType.success,
       title: title,
       text: body,
@@ -235,6 +257,7 @@ Future<void> _waitForOperationsToComplete({
       },
     );
   }
+
   Future<void> _setupNotificationChannels() async {
     channel = const AndroidNotificationChannel(
       'high_importance_channel',
@@ -276,78 +299,92 @@ Future<void> _waitForOperationsToComplete({
       _handleNotificationNavigation(message);
     });
   }
+
   void _showErrorAndNavigate(BuildContext? context, String message) {
     if (context != null) {
-
-      CustomSnackBar.showError('Error', message);
+      CustomSnackBar.showError('', message);
       Navigator.of(context).pop();
-      navigateToHome();
+      //navigateToHome();
     } else {
-
       _pendingErrorMessage = message;
       navigateToHome();
     }
   }
+Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
+ if (travelId == null) {
+   CustomSnackBar.showError('', 'Viaje no encontrado');
+   return;
+ }
 
-    Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
-    if (travelId == null) {
-      _showErrorAndNavigate(context, 'Viaje no encontrado');
-      return;
-    }
+ Get.dialog(
+   WillPopScope(
+     onWillPop: () async => false,
+     child: const Center(
+       child: CircularProgressIndicator(),
+     ),
+   ),
+   barrierDismissible: false,
+ );
 
-    try {
-      final travelByIdController = Get.find<TravelByIdAlertGetx>();
-      await travelByIdController.fetchCoDetails(TravelByIdEventDetailsEvent(idTravel: travelId));
-      
-      await Future.delayed(const Duration(milliseconds: 100));
-      
-      final state = travelByIdController.state.value;
-      
-      if (state is TravelByIdAlertLoaded) {
-        Get.offAll(() => AcceptTravelPage(idTravel: travelId));
-      } else if (state is TravelByIdAlertFailure) {
-        _showErrorAndNavigate(context, 'Viaje ya fue aceptado');
-      }
-    } catch (e) {
-      print('Error fetching travel details: $e');
-      _showErrorAndNavigate(context, 'Error al obtener detalles del viaje');
-    }
-  }
- void _handleNotificationClick(Map<String, dynamic> data, String? title) {
+ try {
+   await travelByIdController
+     .fetchCoDetails(TravelByIdEventDetailsEvent(idTravel: travelId));
+   
+   
+   final state = travelByIdController.state.value;
+   
+   // Cerrar dialogo de carga
+   Get.back();
+   
+   if (state is TravelByIdAlertLoaded) {
+     await Get.offAll(
+       () => AcceptTravelPage(idTravel: travelId),
+       predicate: (_) => false
+     );
+   } else if (state is TravelByIdAlertFailure) {
+     await Get.offAll(() => SplashScreen());
+     CustomSnackBar.showError('', 'Viaje ya fue aceptado');
+   }
+ } catch (e) {
+   Get.back(); // Cerrar dialogo en caso de error
+   print('Error fetching travel details: $e');
+   CustomSnackBar.showError('', 'Viaje ya fue aceptado');
+ }
+}
+  void _handleNotificationClick(Map<String, dynamic> data, String? title) {
     final int? travelId = int.tryParse(data['travel'] ?? '');
     final context = navigatorKey.currentState?.overlay?.context;
 
     if (title == 'Nuevo viaje!!') {
       _handleTravelFetch(travelId, context);
-    } else {
-      navigateToHome();
-    }
+    } 
   }
 
   void _showQuickAlert(BuildContext context, String title, String body) {
     final NotificationController notificationController =
         Get.find<NotificationController>();
     QuickAlert.show(
-      context: context,
+      context: Get.context!,
       type: QuickAlertType.info,
       title: title,
       text: body,
       confirmBtnText: 'OK',
-      onConfirmBtnTap: () {
+      onConfirmBtnTap: () async {
         if (title == 'Nuevo viaje!!') {
           final message = notificationController.lastNotification.value;
           if (message != null && message.notification?.title != null) {
             _handleNotificationClick(message.data, title);
-
           }
-
         } else if (title == 'Nuevo precio del viaje') {
-             AuthService().clearCurrenttravel();
-                   currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
-        Navigator.of(context).pop();
-
-        } else {
-          Navigator.of(context).pop();
+          AuthService().clearCurrenttravel();
+          currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
+          Navigator.of(Get.context!).pop();
+        } else if (title == 'Propuesta de viaje rechazada'){
+           await AuthService().clearCurrenttravel();
+      await Get.find<NavigationService>().navigateToHome(selectedIndex: 1);
+   
+        }else {
+          Navigator.of(Get.context!).pop();
         }
       },
     );
@@ -382,13 +419,14 @@ Future<void> _waitForOperationsToComplete({
         return 'Cargando...';
       }
 
-      QuickAlert.show(
-        context: context,
-        type: QuickAlertType.custom,
-        title: 'Negociación de Oferta',
-        showCancelBtn: false,
-        showConfirmBtn: false,
-        widget: Column(
+     showCustomAlert(
+        context: Get.context!,
+        type: CustomAlertType.warning,
+        title: 'Nueva oferta',
+        message: '',
+        confirmText: '',
+        cancelText: null,
+        customWidget: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             RichText(
@@ -421,10 +459,10 @@ Future<void> _waitForOperationsToComplete({
               controller: priceController,
               keyboardType: TextInputType.number,
               onChanged: (value) {
-                inputAmount.value = value;
-                buttonText.value =
-                    value.isNotEmpty ? "Ofertar \$${value}" : "Aceptar";
-              },
+  inputAmount.value = value;
+  final truncatedValue = value.length > 8 ? '${value.substring(0, 7)}...' : value;
+  buttonText.value = value.isNotEmpty ? "Ofertar \$${truncatedValue}" : "Confirmar";
+},
               decoration: InputDecoration(
                 labelText: 'Importe \$ MXN',
                 hintText: '',
@@ -486,7 +524,7 @@ Future<void> _waitForOperationsToComplete({
                       );
                       await AuthService().clearCurrenttravel();
 
-                    navigateToHome();
+                      navigateToHome();
                     } else {
                       CustomSnackBar.showError(
                         'Error',
@@ -497,68 +535,82 @@ Future<void> _waitForOperationsToComplete({
                   child: Text("Rechazar"),
                 ),
                 Obx(() => ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary,
-                      ),
-                      onPressed: () async {
-                        if (inputAmount.value.isNotEmpty) {
-                          final offerController =
-                              Get.find<OfferNegotiationGetx>();
-                          final travel = Travelwithtariff(
-                              travelId: travelId,
-                              tarifa: int.tryParse(inputAmount.value) ?? 0,
-                              driverId: driverId);
-                          final event = OffernegotiationEvent(travel: travel);
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Theme.of(context).colorScheme.secondary2,
+  ),
+  onPressed: () async {
+    if (inputAmount.value.isNotEmpty) {
+      final numericAmount = int.tryParse(inputAmount.value) ?? 0;
+      final currentTarifa = travel.cost?? 0;
+      
+      if (numericAmount < currentTarifa) {
+       QuickAlert.show(
+  context: Get.context!,
+  type: QuickAlertType.error,
+  title: 'Importe inválido',
+  text: 'El Importe debe ser mayor a \$${travel.cost} MXN',
+  confirmBtnText: 'Entendido',
+  confirmBtnColor: Theme.of(Get.context!).colorScheme.error,
+  borderRadius: 8,
+  titleColor: Theme.of(Get.context!).colorScheme.error,
+);
+        return;
+      }
 
-                          await offerController.OfferNegotiationtravel(event);
+      final offerController = Get.find<OfferNegotiationGetx>();
+      final travelObj = Travelwithtariff(
+        travelId: travelId,
+        tarifa: numericAmount,
+        driverId: driverId
+      );
+      final event = OffernegotiationEvent(travel: travelObj);
 
-                          if (offerController.message.value
-                              .contains('correctamente')) {
-                            CustomSnackBar.showSuccess(
-                              'Éxito',
-                              offerController.message.value,
-                            );
-                            await AuthService().clearCurrenttravel();
-                            navigateToHome();
-                          } else {
-                            CustomSnackBar.showError(
-                              'Error',
-                              offerController.message.value,
-                            );
-                          }
-                        } else {
-                          final travel = Travelwithtariff(
-                              travelId: travelId,
-                              tarifa: int.tryParse(inputAmount.value) ?? 0,
-                              driverId: driverId);
+      await offerController.OfferNegotiationtravel(event);
 
-                          final acceptController =
-                              Get.find<AcceptWithCounteroffeGetx>();
-                          final event =
-                              AcceptwithcounteroffeEvent(travel: travel);
+      if (offerController.message.value.contains('correctamente')) {
+        CustomSnackBar.showSuccess(
+          'Éxito',
+          offerController.message.value,
+        );
+        await AuthService().clearCurrenttravel();
+        navigateToHome();
+      } else {
+        CustomSnackBar.showError(
+          'Error',
+          offerController.message.value,
+        );
+      }
+    } else {
+      // Lógica existente para aceptar sin contraoferta
+      final travel = Travelwithtariff(
+        travelId: travelId,
+        tarifa: int.tryParse(inputAmount.value) ?? 0,
+        driverId: driverId
+      );
 
-                          await acceptController.acceptedtravel(event);
+      final acceptController = Get.find<AcceptWithCounteroffeGetx>();
+      final event = AcceptwithcounteroffeEvent(travel: travel);
 
-                          if (acceptController.message.value
-                              .contains('correctamente')) {
-                            CustomSnackBar.showSuccess(
-                              'Éxito',
-                              acceptController.message.value,
-                            );
-                          await AuthService().clearCurrenttravel();
-                            navigateToHome();
-                          } else {
-                            CustomSnackBar.showError(
-                              'Error',
-                              acceptController.message.value,
-                            );
-                            Get.back();
-                          }
-                        }
-                      },
-                      child: Text(buttonText.value),
-                    )),
+      await acceptController.acceptedtravel(event);
+
+      if (acceptController.message.value.contains('correctamente')) {
+        CustomSnackBar.showSuccess(
+          'Éxito',
+          acceptController.message.value,
+        );
+        await AuthService().clearCurrenttravel();
+        navigateToHome();
+      } else {
+        CustomSnackBar.showError(
+          'Error',
+          acceptController.message.value,
+        );
+        Get.back();
+      }
+    }
+  },
+  child: Text(buttonText.value),
+))
               ],
             ),
           ],
@@ -566,19 +618,21 @@ Future<void> _waitForOperationsToComplete({
       );
     });
   }
-void navigateToacceptTravel(int travelId) {
- Get.offAllNamed(
+
+  void navigateToacceptTravel(int travelId) {
+    Get.offAllNamed(
       RoutesNames.acceptTravelPage,
       arguments: {'idTravel': travelId},
     );
-}
+  }
 
-void navigateToHome() {
-  Get.offAllNamed(
+  void navigateToHome() {
+    Get.offAllNamed(
       RoutesNames.homePage,
       arguments: {'selectedIndex': 1},
     );
-}
+  }
+
   void _showLocalNotification(RemoteMessage message) async {
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
@@ -591,7 +645,8 @@ void navigateToHome() {
         'originalData': message.data,
       };
 
-      print('Enviando notificación local con payload: ${jsonEncode(payloadData)}');
+      print(
+          'Enviando notificación local con payload: ${jsonEncode(payloadData)}');
 
       await flutterLocalNotificationsPlugin.show(
         notification.hashCode,
@@ -602,7 +657,8 @@ void navigateToHome() {
             channel!.id,
             channel!.name,
             channelDescription: channel!.description,
-            icon: '@mipmap/ic_launcher',
+            icon: '@drawable/ic_launcher_background',
+            color: Color(0xFFEFC300),
             importance: Importance.high,
             priority: Priority.high,
             showWhen: true,

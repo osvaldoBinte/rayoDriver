@@ -5,8 +5,13 @@ import 'package:rayo_taxi/features/driver/domain/usecases/get_driver_usecase.dar
 import 'package:rayo_taxi/features/driver/domain/usecases/login_driver_usecase.dart';
 import 'package:rayo_taxi/features/driver/domain/usecases/remove_data_account_usecase.dart';
 import 'package:rayo_taxi/features/driver/domain/usecases/renew_token_usecase.dart';
+import 'package:rayo_taxi/features/travel/data/datasources/mapa_local_data_source.dart';
 import 'package:rayo_taxi/features/travel/data/datasources/travel_local_data_source.dart';
+import 'package:rayo_taxi/features/travel/data/repositories/mapa_repository_Imp.dart';
 import 'package:rayo_taxi/features/travel/data/repositories/travel_repository_imp.dart';
+import 'package:rayo_taxi/features/travel/domain/usecases/decode_polyline_usecase.dart';
+import 'package:rayo_taxi/features/travel/domain/usecases/get_encoded_points_usecase.dart';
+import 'package:rayo_taxi/features/travel/domain/usecases/get_route_usecase.dart';
 import 'package:rayo_taxi/features/travel/domain/usecases/travelusecase/accept_with_counteroffe_usecase.dart';
 import 'package:rayo_taxi/features/travel/domain/usecases/travelusecase/accepted_travel_usecase.dart';
 import 'package:rayo_taxi/features/travel/domain/usecases/travelusecase/cancel_travel_usecase.dart';
@@ -38,6 +43,12 @@ class UsecaseConfig {
   CurrentTravelUsecase? currentTravelUsecase;
   TravelByIdUsecase? travelByIdUsecase;
 
+  MapaLocalDataSourceImp? mapaLocalDataSourceImp;
+  MapaRepositoryImp? mapaRepositoryImp;
+  GetRouteUsecase? getRouteUsecase;
+  GetEncodedPointsUsecase? getEncodedPointsUsecase;
+  DecodePolylineUsecase? decodePolylineUsecase;
+
   AcceptedTravelUsecase? acceptedTravelUsecase;
   EndTravelUsecase? endTravelUsecase;
   StartTravelUsecase? startTravelUsecase;
@@ -48,10 +59,12 @@ class UsecaseConfig {
   RemoveDataAccountUsecase? removeDataAccountUsecase;
   OfferNegotiationUsecase? offerNegotiationUsecase;
   RejectTravelOfferUsecase? rejectTravelOfferUsecase;
-  RenewTokenUsecase?renewTokenUsecase;
+  RenewTokenUsecase? renewTokenUsecase;
   UsecaseConfig() {
     driverLocalDataSourceImp = DriverLocalDataSourceImp();
     travelLocalDataSourceImp = TravelLocalDataSourceImp();
+    mapaLocalDataSourceImp = MapaLocalDataSourceImp();
+    mapaRepositoryImp = MapaRepositoryImp(mapaLocalDataSource: mapaLocalDataSourceImp!);
     driverRepositoryImp =
         DriverRepositoryImp(driverLocalDataSource: driverLocalDataSourceImp!);
     travelRepositoryImp =
@@ -63,7 +76,8 @@ class UsecaseConfig {
         IdDeviceUsecase(notificationRepository: travelRepositoryImp!);
     changeAvailabilityUsecase =
         ChangeAvailabilityUsecase(driverRepository: driverRepositoryImp!);
-  renewTokenUsecase = RenewTokenUsecase(driverRepository: driverRepositoryImp!);
+    renewTokenUsecase =
+        RenewTokenUsecase(driverRepository: driverRepositoryImp!);
 
     getDeviceUsecase =
         GetDeviceUsecase(notificationRepository: travelRepositoryImp!);
@@ -92,5 +106,11 @@ class UsecaseConfig {
         OfferNegotiationUsecase(travelRepository: travelRepositoryImp!);
     rejectTravelOfferUsecase =
         RejectTravelOfferUsecase(travelRepository: travelRepositoryImp!);
+
+    getRouteUsecase = GetRouteUsecase(travelRepository: mapaRepositoryImp!);
+    getEncodedPointsUsecase =
+        GetEncodedPointsUsecase(travelRepository: mapaRepositoryImp!);
+    decodePolylineUsecase =
+        DecodePolylineUsecase(travelRepository: mapaRepositoryImp!);
   }
 }

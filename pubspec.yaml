@@ -51,12 +51,19 @@ dependencies:
   geocoding: ^3.0.0
   quickalert: ^1.1.0
   permission_handler: ^11.3.1
-  flutter_local_notifications: ^17.2.3
+  flutter_local_notifications: ^18.0.1
   speech_bubble: ^0.0.9
   flutter_dotenv: ^5.0.2
   shimmer: ^3.0.0
   google_maps_flutter: ^2.10.0
   flutter_svg: ^2.0.17
+  url_launcher: ^6.3.1
+  socket_io_client: ^3.0.2
+  flutter_mapbox_navigation: ^0.2.2
+
+
+
+
  
 
 
@@ -109,6 +116,14 @@ flutter:
      - dev.env
      - assets/images/taxi.png
      - assets/images/whatsApp.png
+     - assets/images/mapa/origen.png
+     - assets/images/mapa/destino.png
+     - assets/images/taxi/icon-taxi.png
+     - assets/images/taxi/icons-viaje.png
+     - assets/images/mapa/drivermakert.png
+     - assets/images/viajes/taxi.png
+     - assets/images/viajes/taxi2.png
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

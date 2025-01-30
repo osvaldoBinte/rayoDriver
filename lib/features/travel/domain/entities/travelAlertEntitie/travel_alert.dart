@@ -17,6 +17,7 @@ class TravelAlert {
   final String id_travel_driver;
   final String path_photo;
   final String plates;
+  final int qualification;
 
   TravelAlert({
     required this.id,
@@ -36,6 +37,7 @@ class TravelAlert {
     required this.waiting_for,
     required this.id_travel_driver,
     required this.path_photo,
-    required this.plates
+    required this.plates,
+    required this.qualification,
   });
 }

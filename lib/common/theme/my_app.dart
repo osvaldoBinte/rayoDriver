@@ -9,6 +9,7 @@ import 'package:rayo_taxi/common/routes/%20navigation_service.dart';
 import 'package:rayo_taxi/common/routes/router.dart';
 import 'package:rayo_taxi/common/settings/routes_names.dart';
 import 'package:rayo_taxi/common/theme/app_theme.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/accept_travel/accept_travel_page.dart';
 import 'package:rayo_taxi/main.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -16,7 +17,15 @@ RemoteMessage? initialMessage;
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-  
+  Widget getInitialWidget() {
+  if (initialMessage != null) {
+    final travelId = int.tryParse(initialMessage!.data['travel'] ?? '');
+    if (travelId != null) {
+      return AcceptTravelPage(idTravel: travelId);
+    }
+  }
+  return SplashScreen(initialMessage: initialMessage);
+}
   @override
   Widget build(BuildContext context) {
     return AppLifecycleHandler(
