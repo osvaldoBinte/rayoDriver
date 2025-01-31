@@ -32,10 +32,18 @@ class SocketDriverDataSourceImpl implements SocketDriverDataSource {
   Stream<Map<String, dynamic>> get locationUpdates => _locationController.stream;
   
   SocketDriverDataSourceImpl() {
- socket = IO.io(_baseUrl, <String, dynamic>{
-  'transports': ['websocket'],
-  'autoConnect': false,
-});
+    socket = IO.io(_baseUrl, {
+      'transports': ['websocket', 'polling'],
+      'autoConnect': false,
+      'reconnection': true,
+      'reconnectionAttempts': 5,
+      'timeout': 10000
+    });
+
+    socket.onConnect((_) => print('Conectado: ${socket.id}'));
+    socket.onConnectError((data) => print('Error de conexión: $data'));
+    socket.onError((data) => print('Error: $data'));
+    socket.onDisconnect((_) => print('Desconectado'));
 
     // Escuchar eventos
     socket.onConnect((_) {

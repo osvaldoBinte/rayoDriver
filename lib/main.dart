@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -32,11 +34,21 @@ import 'package:rayo_taxi/features/driver/presentation/getxs/removeDataAccount/r
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/offerNegotiation/offer_negotiation_getx.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/rejectTravelOffer/reject_travel_offer_getx.dart';
 import 'connectivity_service.dart';
+import 'package:flutter/services.dart';
+
+// Agregar antes de runApp()
+void setupMemoryMonitoring() {  
+  const duration = Duration(minutes: 5);
+  Stream.periodic(duration).listen((_) {
+    final memory = ProcessInfo.currentRss;
+    print('Uso de memoria: ${memory ~/ 1024 ~/ 1024}MB');
+  });
+}
 
 final connectivityService = ConnectivityService();
 UsecaseConfig usecaseConfig = UsecaseConfig();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-String enviromentSelect = Enviroment.development.value; 
+String enviromentSelect = Enviroment.testing.value; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +56,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  setupMemoryMonitoring(); // Agregar esta línea
 
   print('=========ENVIROMENT SELECTED: $enviromentSelect');
   await dotenv.load(fileName: enviromentSelect);
@@ -102,4 +115,5 @@ void main() async {
   Get.put(NavigationService());
 
   runApp(MyApp());
+  
 }

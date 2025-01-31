@@ -633,6 +633,37 @@ void launchMapboxNavigationToDestination() async {
     CustomSnackBar.showError('Error', 'No se pudo iniciar la navegación: ${e.toString()}');
   }
 }
+void launchGoogleMapsNavigation() async {
+  if (endLocation.value == null || driverLocation.value == null) {
+    CustomSnackBar.showError('Error', 'No se pudo obtener la ubicación');
+    return;
+  }
+
+  try {
+    final origin = '${driverLocation.value!.latitude},${driverLocation.value!.longitude}';
+    final destination = '${endLocation.value!.latitude},${endLocation.value!.longitude}';
+    
+    // Agrega los parámetros brand y logo
+    final url = 'https://www.google.com/maps/dir/?api=1'
+        '&origin=$origin'
+        '&destination=$destination'
+        '&travelmode=driving'
+        '&brand=rayo'  // Reemplaza con el nombre de tu app
+        '&logo=https://www.muyinteresante.com/wp-content/uploads/sites/5/2014/01/lightning-3020873_1920.jpg?resize=1370,770O'; // URL pública de tu logo (https://...)
+    
+    if (await canLaunch(url)) {
+      await launch(url, 
+        forceSafariVC: false, // Importante para iOS
+        forceWebView: false   // Abre en la app nativa
+      );
+    } else {
+      throw Exception('No se pudo abrir Google Maps');
+    }
+  } catch (e) {
+    print('Error al abrir Google Maps: $e');
+    CustomSnackBar.showError('Error', 'No se pudo abrir Google Maps: ${e.toString()}');
+  }
+}
 void launchMapboxNavigationStart() async {
   if (startLocation.value == null || driverLocation.value == null) {
     CustomSnackBar.showError('Error', 'No se pudo obtener la ubicación');
