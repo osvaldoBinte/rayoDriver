@@ -80,28 +80,28 @@ class TravelRouteController extends GetxController {
   Rx<BitmapDescriptor> destinationIcon = BitmapDescriptor.defaultMarker.obs;
   Rx<BitmapDescriptor> driverIcon = BitmapDescriptor.defaultMarker.obs;
   RxBool markersLoaded = false.obs;
-  late SocketDriverDataSourceImpl socketDriver;
 Rx<DirectionStep?> currentStep = Rx<DirectionStep?>(null);
   RxList<DirectionStep> routeSteps = <DirectionStep>[].obs;
 late MapBoxNavigation _directions; 
-@override
-  void onInit() {
-    super.onInit();
-      _directions = MapBoxNavigation(); // Usa MapBoxNavigation
+  late SocketDriverDataSourceImpl socketDriver;
 
+@override
+void onInit() {
+    super.onInit();
     _loadCustomMarkerIcons();
     _initializeData();
     getCurrentLocation();
     _initializeSocket();
-   if (travelList.isNotEmpty) {
+
+    // Configurar el estado inicial de seguimiento basado en el status
+    if (travelList.isNotEmpty) {
       String status = travelList[0].id_status.toString();
       isFollowingDriver.value = (status == "3" || status == "4");
       
       // Conectar o desconectar socket según el status
       _handleSocketConnectionBasedOnStatus(status);
     }
-  }
-void _handleSocketConnectionBasedOnStatus(String status) {
+  } void _handleSocketConnectionBasedOnStatus(String status) {
     if (status == "3" || status == "4") {
       // Conectar y unirse al viaje
       socketDriver.connect();
@@ -114,6 +114,7 @@ void _handleSocketConnectionBasedOnStatus(String status) {
     }
   }
 
+ 
   void _initializeSocket() {
     socketDriver = SocketDriverDataSourceImpl();
   }
@@ -156,15 +157,12 @@ void _handleSocketConnectionBasedOnStatus(String status) {
     }
   }
 
-  @override
-void onClose() {
-  if (!travelList.isNotEmpty || 
-      (travelList[0].id_status.toString() != "3" && 
-       travelList[0].id_status.toString() != "4")) {
+ @override
+  void onClose() {
     socketDriver.disconnect();
+    positionStreamSubscription?.cancel();
+    super.onClose();
   }
-  super.onClose();
-}
 
   int travelStageToInt(TravelStage stage) {
     switch (stage) {
@@ -376,7 +374,7 @@ void onClose() {
       updateMapBounds();
     }
   }
-  void getCurrentLocation() async {
+    void getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       await Geolocator.openLocationSettings();

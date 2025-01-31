@@ -36,7 +36,7 @@ import 'connectivity_service.dart';
 final connectivityService = ConnectivityService();
 UsecaseConfig usecaseConfig = UsecaseConfig();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-String enviromentSelect = Enviroment.testing.value; 
+String enviromentSelect = Enviroment.development.value; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
