@@ -161,9 +161,9 @@ Row(
     child: ElevatedButton.icon(
       onPressed: () {
         if (widget.travelList[0].id_status == 3) {
-          controller.launchGoogleMapsNavigation();
+          controller.launchMapboxNavigationStart();
         } else {
-          controller.launchGoogleMapsNavigation();
+          controller.launchMapboxNavigationToDestination();
         }
       },
       style: ElevatedButton.styleFrom(
