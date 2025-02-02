@@ -5,7 +5,6 @@ import 'package:quickalert/quickalert.dart';
 import 'package:rayo_taxi/common/routes/%20navigation_service.dart';
 import 'package:rayo_taxi/common/settings/routes_names.dart';
 import 'package:rayo_taxi/features/AuthS/AuthService.dart';
-import 'package:flutter_mapbox_navigation/flutter_mapbox_navigation.dart';
 
 import 'package:rayo_taxi/features/driver/domain/entities/change_availability_entitie.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/changeAvailability/changeAvailability_getx.dart';
@@ -88,13 +87,22 @@ late MapBoxNavigation _directions;
 @override
 void onInit() {
     super.onInit();
+      _directions = MapBoxNavigation();  
+
     _loadCustomMarkerIcons();
     _initializeData();
     getCurrentLocation();
     _initializeSocket();
 
-    // Configurar el estado inicial de seguimiento basado en el status
-    if (travelList.isNotEmpty) {
+  ever(driverLocation, (_) {
+    try {
+      if (mapController != null && isFollowingDriver.value) {
+        _focusOnDriver();
+      }
+    } catch (e) {
+      print('Error al actualizar la cámara: $e');
+    }
+  });    if (travelList.isNotEmpty) {
       String status = travelList[0].id_status.toString();
       isFollowingDriver.value = (status == "3" || status == "4");
       
@@ -157,12 +165,32 @@ void onInit() {
     }
   }
 
- @override
-  void onClose() {
+@override
+void onClose() {
+  try {
+    // Limpiar recursos del mapa
+    if (mapController != null) {
+      mapController?.dispose();
+      mapController = null;
+    }
+
+    // Detener la navegación de Mapbox si está activa
+    _directions.finishNavigation();
+
+    // Desconectar socket
     socketDriver.disconnect();
-    positionStreamSubscription?.cancel();
+
+    // Cancelar suscripción de ubicación
+    if (positionStreamSubscription != null) {
+      positionStreamSubscription?.cancel();
+      positionStreamSubscription = null;
+    }
+  } catch (e) {
+    print('Error en onClose: $e');
+  } finally {
     super.onClose();
   }
+}
 
   int travelStageToInt(TravelStage stage) {
     switch (stage) {
@@ -253,29 +281,34 @@ void onInit() {
 
  void _focusOnDriver() {
   if (driverLocation.value != null && mapController != null && isFollowingDriver.value) {
-    double bearing = 0.0;
-    if (lastDriverPositionForRouteUpdate != null) {
-      bearing = _calculateBearing(
-        lastDriverPositionForRouteUpdate!.latitude,
-        lastDriverPositionForRouteUpdate!.longitude,
-        driverLocation.value!.latitude,
-        driverLocation.value!.longitude,
-      );
-    }
+    try {
+      double bearing = 0.0;
+      if (lastDriverPositionForRouteUpdate != null) {
+        bearing = _calculateBearing(
+          lastDriverPositionForRouteUpdate!.latitude,
+          lastDriverPositionForRouteUpdate!.longitude,
+          driverLocation.value!.latitude,
+          driverLocation.value!.longitude,
+        );
+      }
 
-    mapController!.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: driverLocation.value!,
-          zoom: navigationZoom,
-          tilt: navigationTilt,
-          bearing: bearing,
+      mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: driverLocation.value!,
+            zoom: navigationZoom,
+            tilt: navigationTilt,
+            bearing: bearing,
+          ),
         ),
-      ),
-    );
+      ).catchError((error) {
+        print('Error al animar la cámara: $error');
+      });
+    } catch (e) {
+      print('Error en _focusOnDriver: $e');
+    }
   }
 }
-
   double _calculateBearing(
       double startLat, double startLng, double endLat, double endLng) {
     var startLatRad = startLat * (pi / 180.0);
@@ -932,7 +965,8 @@ void launchMapboxNavigationStart() async {
     });
   }
 
-  void onMapCreated(GoogleMapController controller) {
+void onMapCreated(GoogleMapController controller) {
+  try {
     mapController = controller;
     if (travelList.isNotEmpty) {
       int idStatus = int.tryParse(travelList[0].id_status.toString()) ?? 0;
@@ -944,7 +978,10 @@ void launchMapboxNavigationStart() async {
         updateMapBounds();
       }
     }
+  } catch (e) {
+    print('Error en onMapCreated: $e');
   }
+}
 
   void updateTravelStatus(String newStatus) {
     int idStatus = int.tryParse(newStatus) ?? 0;

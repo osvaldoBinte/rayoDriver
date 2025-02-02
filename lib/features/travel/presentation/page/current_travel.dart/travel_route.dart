@@ -163,7 +163,7 @@ Row(
         if (widget.travelList[0].id_status == 3) {
           controller.launchGoogleMapsNavigation();
         } else {
-          controller.launchMapboxNavigationToDestination();
+          controller.launchGoogleMapsNavigation();
         }
       },
       style: ElevatedButton.styleFrom(

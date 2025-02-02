@@ -39,9 +39,10 @@ android {
         targetSdkVersion localProperties.getProperty('flutter.targetSdkVersion').toInteger()
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
-        manifestPlaceholders = [
-        MAPBOX_DOWNLOADS_TOKEN: "$MAPBOX_DOWNLOADS_TOKEN",
-        applicationName: "io.flutter.app.FlutterApplication"
+      manifestPlaceholders = [
+            MAPBOX_DOWNLOADS_TOKEN: "$MAPBOX_DOWNLOADS_TOKEN",
+            applicationName: "io.flutter.app.FlutterApplication",
+            leak_canary_auto_install: "false"  // Añade esta línea
         ]
     }
 
@@ -55,6 +56,9 @@ android {
         resolutionStrategy {
             force 'androidx.work:work-runtime:2.8.1'
             force 'androidx.work:work-runtime-ktx:2.8.1'
+            exclude group: 'com.squareup.leakcanary', module: 'leakcanary-android'
+            exclude group: 'com.squareup.leakcanary', module: 'leakcanary-object-watcher-android'
+      
             eachDependency {
                 if ((requested.group == "org.jetbrains.kotlin") && (requested.name.startsWith("kotlin-stdlib"))) {
                     useVersion("1.8.0")

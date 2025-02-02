@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:rayo_taxi/common/constants/constants.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-
+ 
 abstract class SocketDriverDataSource {
   void connect();
   void joinTravel(String idTravel);
@@ -66,7 +66,13 @@ class SocketDriverDataSourceImpl implements SocketDriverDataSource {
 
   @override
   void disconnect() {
-    _locationController.close();
-    socket.disconnect();
+    try {
+      socket.emit('leave_travel', null);
+      socket.clearListeners();
+      socket.dispose();
+      _locationController.close();
+    } catch (e) {
+      print('Error al desconectar socket: $e');
+    }
   }
 }

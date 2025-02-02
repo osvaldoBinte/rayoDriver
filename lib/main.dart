@@ -36,7 +36,6 @@ import 'package:rayo_taxi/features/travel/presentation/getxtravel/rejectTravelOf
 import 'connectivity_service.dart';
 import 'package:flutter/services.dart';
 
-// Agregar antes de runApp()
 void setupMemoryMonitoring() {  
   const duration = Duration(minutes: 5);
   Stream.periodic(duration).listen((_) {
@@ -48,7 +47,7 @@ void setupMemoryMonitoring() {
 final connectivityService = ConnectivityService();
 UsecaseConfig usecaseConfig = UsecaseConfig();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-String enviromentSelect = Enviroment.testing.value; 
+String enviromentSelect = Enviroment.development.value; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

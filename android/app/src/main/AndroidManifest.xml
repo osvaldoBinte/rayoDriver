@@ -19,10 +19,6 @@
         android:roundIcon="@mipmap/ic_launcher"
         >
         
-        <meta-data
-    android:name="com.mapbox.token"
-    android:value="@string/mapbox_access_token" />
-     
         <!-- Configuración de notificaciones Firebase -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
