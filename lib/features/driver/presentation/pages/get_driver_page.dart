@@ -13,6 +13,8 @@ import 'package:rayo_taxi/features/driver/presentation/pages/Widget/list_option.
 import 'package:rayo_taxi/features/driver/presentation/pages/ayudaPage/ayuda_page.dart';
 import 'package:rayo_taxi/features/driver/presentation/pages/login_driver_page.dart';
 import 'package:rayo_taxi/features/driver/presentation/pages/privacy_notices/privacy_notices.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/current_travel.dart/travel_route_controller.dart';
+import 'package:rayo_taxi/features/travel/presentation/page/widgets/custom_alert_dialog.dart';
 import 'package:rayo_taxi/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:quickalert/quickalert.dart';
@@ -36,6 +38,7 @@ class _GetDriverPage extends State<GetDriverPage> {
 
   final RemovedataaccountGetx _removedataaccountGetx =
       Get.find<RemovedataaccountGetx>();
+  final RxBool useMapbox = true.obs;
 
   
  Future<void> _logout() async {
@@ -44,6 +47,7 @@ class _GetDriverPage extends State<GetDriverPage> {
   @override
   void initState() {
     super.initState();
+    _loadNavigationPreference();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       getDriveGetx.fetchCoDetails(FetchgetDetailsEvent());
@@ -64,6 +68,38 @@ class _GetDriverPage extends State<GetDriverPage> {
       }
     });
   }
+Future<void> _loadNavigationPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    useMapbox.value = prefs.getBool('use_mapbox') ?? true;
+  }
+bool getNavigationPreference() {
+  return useMapbox.value;
+}
+ void _toggleNavigation() {
+  showCustomAlert(
+    context: Get.context!,
+    type: CustomAlertType.confirm,
+    title: 'Cambiar Navegación',
+    message: useMapbox.value 
+        ? '¿Deseas cambiar a Google Maps?' 
+        : '¿Deseas quedarte con Rayo Taxi?',
+    confirmText: 'Sí',
+    cancelText: 'No',
+    onConfirm: () async {
+      useMapbox.value = !useMapbox.value;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('use_mapbox', useMapbox.value);
+      
+      if (Get.isRegistered<TravelRouteController>()) {
+        Get.find<TravelRouteController>().updateNavigationPreference(useMapbox.value);
+      }
+      Navigator.of(Get.context!).pop();
+    },
+    onCancel: () {
+      Navigator.of(Get.context!).pop();
+    },
+  );
+}
 
   @override
   void dispose() {
@@ -222,6 +258,11 @@ class _GetDriverPage extends State<GetDriverPage> {
                       label: 'Cerrar Sesión',
                       onPressed: _logout,
                     ),
+                     Obx(() => CardButton(
+                    icon: useMapbox.value ? Icons.map : Icons.navigation,
+                    label: useMapbox.value ? 'Usar Rayo' : 'Usar Google Maps',
+                    onPressed: _toggleNavigation,
+                  )),
                   ],
                 ),
                 const SizedBox(height: 30),

@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:quickalert/quickalert.dart';
@@ -82,13 +83,6 @@ class _TravelRouteState extends State<TravelRoute> with AutomaticKeepAliveClient
 );
               }),
             ),
- Obx(() {
-      if (controller.journeyStarted.value && !controller.journeyCompleted.value) {
-        return buildNavigationInstructions();
-      }
-      return SizedBox.shrink();
-    }),
-            // Estado del viaje
             Positioned(
               top: 16,
               left: 16,
@@ -155,23 +149,44 @@ Row(
           ),
           child: Text('Cancelar Viaje'),
         ),
-       if (widget.travelList[0].id_status == 3 || widget.travelList[0].id_status == 4)
+        if (widget.travelList[0].id_status == 3 || widget.travelList[0].id_status == 4)
   Padding(
     padding: EdgeInsets.only(top: 8),
-    child: ElevatedButton.icon(
-      onPressed: () {
-        if (widget.travelList[0].id_status == 3) {
-          controller.launchMapboxNavigationStart();
-        } else {
-          controller.launchMapboxNavigationToDestination();
-        }
-      },
+    child: Obx(() => ElevatedButton.icon(
+      onPressed: controller.isLoadingNavigation.value 
+        ? null 
+        : () async {
+            if (widget.travelList[0].id_status == 3) {
+              if (controller.useMapbox.value) {
+                await controller.launchMapboxNavigationStart();
+              } else {
+                await controller.launchGoogleMapsNavigationStart();
+              }
+            } else {
+              if (controller.useMapbox.value) {
+                await controller.launchMapboxNavigationToDestination();
+              } else {
+                await controller.launchGoogleMapsNavigationToDestination();
+              }
+            }
+          },
       style: ElevatedButton.styleFrom(
         backgroundColor: Theme.of(context).colorScheme.buttonColormap,
       ),
-      icon: Icon(Icons.directions),
-        label: Text('Cómo llegar')
-    ),
+      icon: controller.isLoadingNavigation.value
+        ? SpinKitFadingCircle(
+            color: Colors.white,
+            size: 18.0,
+          )
+        : Icon(controller.useMapbox.value ? Icons.navigation : Icons.map),
+      label: Text(
+        controller.isLoadingNavigation.value 
+          ? 'Cargando...' 
+          : controller.useMapbox.value 
+            ? 'Cómo llegar' 
+            : 'Cómo llegar'
+      )
+    )),
   ),
       ],
     ),
@@ -192,14 +207,33 @@ Row(
             ),
           ),
         ElevatedButton(
-          onPressed: () => isIdStatusFour
-              ? controller.endTravel(context)
-              : controller.startTravel(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.buttonColormap,
+  onPressed: controller.isLoadingStartJourney.value 
+    ? null 
+    : () => isIdStatusFour
+        ? controller.endTravel(context)
+        : controller.startTravel(context),
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Theme.of(context).colorScheme.buttonColormap,
+  ),
+  child: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (controller.isLoadingStartJourney.value)
+        Padding(
+          padding: EdgeInsets.only(right: 8),
+          child: SpinKitFadingCircle(
+            color: Colors.white,
+            size: 18.0,
           ),
-          child: Text(isIdStatusFour ? 'Terminar Viaje' : 'Iniciar Viaje'),
         ),
+      Text(isIdStatusFour 
+        ? 'Terminar Viaje' 
+        : controller.isLoadingStartJourney.value 
+          ? 'Iniciando...' 
+          : 'Iniciar Viaje'),
+    ],
+  ),
+)
       ],
     ),
   ],
@@ -213,71 +247,4 @@ Row(
     );
  
   }
-  Widget buildNavigationInstructions() {
-  return Positioned(
-    top: 60,
-    left: 20,
-    right: 20,
-    child: Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Navegación en curso',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              Icon(Icons.navigation, color: Theme.of(context).primaryColor),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.location_on, color: Colors.red, size: 20),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Dirigiéndose al destino',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-          if (controller.driverLocation.value != null && 
-              controller.endLocation.value != null)
-            Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Sigue la ruta marcada',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
-}
 }

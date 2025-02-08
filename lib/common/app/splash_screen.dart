@@ -30,13 +30,15 @@ class _SplashScreenState extends State<SplashScreen> {
     _initializeApp();
     requestLocationPermission();
   }
-
 Future<void> requestLocationPermission() async {
+  // Primero verificar si el servicio de ubicación está habilitado
   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
+    await Geolocator.openLocationSettings();
     return Future.error('Servicios de ubicación desactivados');
   }
 
+  // Solicitar permiso de ubicación mientras la app está en uso
   LocationPermission permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
@@ -44,8 +46,61 @@ Future<void> requestLocationPermission() async {
       return Future.error('Permisos de ubicación denegados');
     }
   }
+
+  // Si los permisos están denegados permanentemente, mostrar diálogo
+  if (permission == LocationPermission.deniedForever) {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Permisos de ubicación'),
+          content: Text(
+            'Esta aplicación necesita acceso a la ubicación en segundo plano para funcionar correctamente. '
+            'Por favor, habilita el permiso "Permitir todo el tiempo" en la configuración.',
+          ),
+          actions: [
+            TextButton(
+              child: Text('Abrir Configuración'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await Geolocator.openAppSettings();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    return;
+  }
+
+  // Si ya tenemos permisos básicos, solicitar permisos en segundo plano
+  if (permission == LocationPermission.whileInUse) {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Permisos adicionales necesarios'),
+          content: Text(
+            'Para proporcionar un mejor servicio, necesitamos acceder a tu ubicación incluso cuando la app está en segundo plano. '
+            'Por favor, selecciona "Permitir todo el tiempo" en la siguiente pantalla.',
+          ),
+          actions: [
+            TextButton(
+              child: Text('Continuar'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await Geolocator.openAppSettings();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
-  void _initializeApp() async {
+void _initializeApp() async {
    // final prefs = await SharedPreferences.getInstance();
     token = await Get.find<RenewTokenGetx>().execute();
     idDevice = await Get.find<GetDeviceGetx>().fetchDeviceId();

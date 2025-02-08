@@ -9,6 +9,7 @@ import 'package:rayo_taxi/common/routes/%20navigation_service.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/changeAvailability/changeAvailability_getx.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/get/id_device_get.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/get/renew_token.dart';
+import 'package:rayo_taxi/features/travel/data/datasources/background_location_handler.dart';
 import 'package:rayo_taxi/features/travel/presentation/getxtravel/TravelById/DriverArrival/driverArrival_getx.dart';
 import 'package:rayo_taxi/features/travel/presentation/notificationcontroller/notification_controller.dart';
 import 'package:rayo_taxi/features/travel/presentation/page/travel_id/map_data_controller.dart';
@@ -55,7 +56,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  setupMemoryMonitoring(); // Agregar esta línea
+  setupMemoryMonitoring(); 
+  await LocationHandler.initialize();
 
   print('=========ENVIROMENT SELECTED: $enviromentSelect');
   await dotenv.load(fileName: enviromentSelect);

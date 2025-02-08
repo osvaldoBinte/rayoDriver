@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:flutter_mapbox_navigation/flutter_mapbox_navigation.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -10,6 +12,7 @@ import 'package:rayo_taxi/features/AuthS/AuthService.dart';
 import 'package:rayo_taxi/features/driver/domain/entities/change_availability_entitie.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/changeAvailability/changeAvailability_getx.dart';
 import 'package:rayo_taxi/features/driver/presentation/pages/home/home_page.dart';
+import 'package:rayo_taxi/features/travel/data/datasources/background_location_handler.dart';
 import 'package:rayo_taxi/features/travel/data/datasources/socket_driver_data_source.dart';
 import 'package:rayo_taxi/features/travel/data/models/direction_step.dart';
 import 'package:rayo_taxi/features/travel/data/models/travel_alert/travel_alert_model.dart';
@@ -30,6 +33,7 @@ import 'package:rayo_taxi/features/travel/presentation/page/current_travel.dart/
 import 'package:rayo_taxi/features/travel/presentation/page/widgets/customSnacknar.dart';
 import 'package:rayo_taxi/features/travel/presentation/page/widgets/custom_alert_dialog.dart';
 import 'package:rayo_taxi/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' show sin, cos, sqrt, atan2, pi;
 
 import 'package:url_launcher/url_launcher.dart';
@@ -38,11 +42,12 @@ enum TravelStage { heLlegado, iniciarViaje, terminarViaje }
 
 class TravelRouteController extends GetxController {
   final List<TravelAlertModel> travelList;
+  RxBool useMapbox = true.obs;
 
   TravelRouteController({required this.travelList});
   final currentTravelGetx = Get.find<CurrentTravelGetx>();
   final travelAlertGetx = Get.find<TravelsAlertGetx>();
-
+  RxBool isLoadingNavigation = false.obs;
   Rx<TravelStage> travelStage = TravelStage.heLlegado.obs;
   RxSet<Marker> markers = <Marker>{}.obs;
   RxSet<Polyline> polylines = <Polyline>{}.obs;
@@ -59,6 +64,7 @@ class TravelRouteController extends GetxController {
   final double navigationZoom = 20.0;
   final double navigationTilt = 60.0;
   RxBool isFollowingDriver = true.obs;
+  RxBool isLoadingStartJourney = false.obs;
 
   GoogleMapController? mapController;
   final LatLng center = const LatLng(20.676666666667, -103.39182);
@@ -80,37 +86,68 @@ class TravelRouteController extends GetxController {
   Rx<BitmapDescriptor> destinationIcon = BitmapDescriptor.defaultMarker.obs;
   Rx<BitmapDescriptor> driverIcon = BitmapDescriptor.defaultMarker.obs;
   RxBool markersLoaded = false.obs;
-Rx<DirectionStep?> currentStep = Rx<DirectionStep?>(null);
+  Rx<DirectionStep?> currentStep = Rx<DirectionStep?>(null);
   RxList<DirectionStep> routeSteps = <DirectionStep>[].obs;
-late MapBoxNavigation _directions; 
+  late MapBoxNavigation _directions;
   late SocketDriverDataSourceImpl socketDriver;
+static const String _isolateName = 'locationIsolate';
+  RxBool isBackgroundServiceRunning = false.obs;
 
-@override
-void onInit() {
+  @override
+  void onInit() async {
     super.onInit();
-      _directions = MapBoxNavigation();  
+    _directions = MapBoxNavigation();
+    final prefs = await SharedPreferences.getInstance();
+    useMapbox.value = prefs.getBool('use_mapbox') ?? true;
+        _setupLocationIsolateListener();
 
     _loadCustomMarkerIcons();
     _initializeData();
     getCurrentLocation();
     _initializeSocket();
 
-  ever(driverLocation, (_) {
-    try {
-      if (mapController != null && isFollowingDriver.value) {
-        _focusOnDriver();
+    ever(driverLocation, (_) {
+      try {
+        if (mapController != null && isFollowingDriver.value) {
+          _focusOnDriver();
+        }
+      } catch (e) {
+        print('Error al actualizar la cámara: $e');
       }
-    } catch (e) {
-      print('Error al actualizar la cámara: $e');
-    }
-  });    if (travelList.isNotEmpty) {
+    });
+    if (travelList.isNotEmpty) {
       String status = travelList[0].id_status.toString();
       isFollowingDriver.value = (status == "3" || status == "4");
-      
+
       // Conectar o desconectar socket según el status
       _handleSocketConnectionBasedOnStatus(status);
     }
-  } void _handleSocketConnectionBasedOnStatus(String status) {
+  }
+void _setupLocationIsolateListener() {
+    final receivePort = ReceivePort();
+    if (IsolateNameServer.lookupPortByName(_isolateName) != null) {
+      IsolateNameServer.removePortNameMapping(_isolateName);
+    }
+    IsolateNameServer.registerPortWithName(receivePort.sendPort, _isolateName);
+
+    receivePort.listen((message) {
+      if (message is Map<String, dynamic> && message['type'] == 'location') {
+        final locationData = message['data'];
+        // Update socket with location data
+        if (travelList.isNotEmpty) {
+          String idStatusString = travelList[0].id_status.toString();
+          if (idStatusString == "3" || idStatusString == "4") {
+            socketDriver.updateLocation(
+              travelList[0].id.toString(),
+              locationData,
+            );
+          }
+        }
+      }
+    });
+  }
+
+  void _handleSocketConnectionBasedOnStatus(String status) {
     if (status == "3" || status == "4") {
       // Conectar y unirse al viaje
       socketDriver.connect();
@@ -123,10 +160,10 @@ void onInit() {
     }
   }
 
- 
   void _initializeSocket() {
     socketDriver = SocketDriverDataSourceImpl();
   }
+
   Future<void> _loadCustomMarkerIcons() async {
     try {
       final List<Future<void>> futures = [
@@ -146,11 +183,9 @@ void onInit() {
 
       await Future.wait(futures);
       markersLoaded.value = true;
-      // Actualizar los marcadores existentes con los nuevos iconos
       _updateExistingMarkers();
     } catch (e) {
       print('Error cargando iconos personalizados: $e');
-      // En caso de error, usar marcadores por defecto
       startIcon.value = BitmapDescriptor.defaultMarker;
       destinationIcon.value = BitmapDescriptor.defaultMarker;
       driverIcon.value =
@@ -162,36 +197,32 @@ void onInit() {
     if (markers.isNotEmpty) {
       final updatedMarkers = Set<Marker>.from(markers);
       markers.value = updatedMarkers;
-      _initializeData(); // Reinicializar los marcadores con los nuevos iconos
+      _initializeData();
     }
   }
 
-@override
-void onClose() {
-  try {
-    // Limpiar recursos del mapa
-    if (mapController != null) {
-      mapController?.dispose();
-      mapController = null;
+  @override
+  void onClose() {
+    try {
+      if (mapController != null) {
+        mapController?.dispose();
+        mapController = null;
+      }
+
+      _directions.finishNavigation();
+
+      socketDriver.disconnect();
+
+      if (positionStreamSubscription != null) {
+        positionStreamSubscription?.cancel();
+        positionStreamSubscription = null;
+      }
+    } catch (e) {
+      print('Error en onClose: $e');
+    } finally {
+      super.onClose();
     }
-
-    // Detener la navegación de Mapbox si está activa
-    _directions.finishNavigation();
-
-    // Desconectar socket
-    socketDriver.disconnect();
-
-    // Cancelar suscripción de ubicación
-    if (positionStreamSubscription != null) {
-      positionStreamSubscription?.cancel();
-      positionStreamSubscription = null;
-    }
-  } catch (e) {
-    print('Error en onClose: $e');
-  } finally {
-    super.onClose();
   }
-}
 
   int travelStageToInt(TravelStage stage) {
     switch (stage) {
@@ -280,36 +311,41 @@ void onClose() {
     }
   }
 
- void _focusOnDriver() {
-  if (driverLocation.value != null && mapController != null && isFollowingDriver.value) {
-    try {
-      double bearing = 0.0;
-      if (lastDriverPositionForRouteUpdate != null) {
-        bearing = _calculateBearing(
-          lastDriverPositionForRouteUpdate!.latitude,
-          lastDriverPositionForRouteUpdate!.longitude,
-          driverLocation.value!.latitude,
-          driverLocation.value!.longitude,
-        );
-      }
+  void _focusOnDriver() {
+    if (driverLocation.value != null &&
+        mapController != null &&
+        isFollowingDriver.value) {
+      try {
+        double bearing = 0.0;
+        if (lastDriverPositionForRouteUpdate != null) {
+          bearing = _calculateBearing(
+            lastDriverPositionForRouteUpdate!.latitude,
+            lastDriverPositionForRouteUpdate!.longitude,
+            driverLocation.value!.latitude,
+            driverLocation.value!.longitude,
+          );
+        }
 
-      mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: driverLocation.value!,
-            zoom: navigationZoom,
-            tilt: navigationTilt,
-            bearing: bearing,
+        mapController
+            ?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: driverLocation.value!,
+              zoom: navigationZoom,
+              tilt: navigationTilt,
+              bearing: bearing,
+            ),
           ),
-        ),
-      ).catchError((error) {
-        print('Error al animar la cámara: $error');
-      });
-    } catch (e) {
-      print('Error en _focusOnDriver: $e');
+        )
+            .catchError((error) {
+          print('Error al animar la cámara: $error');
+        });
+      } catch (e) {
+        print('Error en _focusOnDriver: $e');
+      }
     }
   }
-}
+
   double _calculateBearing(
       double startLat, double startLng, double endLat, double endLng) {
     var startLatRad = startLat * (pi / 180.0);
@@ -408,7 +444,8 @@ void onClose() {
       updateMapBounds();
     }
   }
-    void getCurrentLocation() async {
+
+  void getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       await Geolocator.openLocationSettings();
@@ -426,7 +463,8 @@ void onClose() {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      Get.snackbar('Error', 'Los permisos de ubicación están denegados permanentemente');
+      Get.snackbar(
+          'Error', 'Los permisos de ubicación están denegados permanentemente');
       return;
     }
 
@@ -461,7 +499,6 @@ void onClose() {
           );
         }
       }
-
       if (travelList.isNotEmpty) {
         String idStatusString = travelList[0].id_status.toString();
         int idStatus = int.tryParse(idStatusString) ?? 0;
@@ -544,7 +581,8 @@ void onClose() {
       }
     }
   }
- void updateCurrentStep() {
+
+  void updateCurrentStep() {
     if (routeSteps.isEmpty || driverLocation.value == null) return;
 
     // Encontrar el paso más cercano basado en la distancia
@@ -561,13 +599,16 @@ void onClose() {
       }
     }
   }
+
   Future<void> traceRouteDriverToEnd() async {
-      if (driverLocation.value != null && endLocation.value != null) {
+    if (driverLocation.value != null && endLocation.value != null) {
       try {
         await driverTravelLocalDataSource.getRoute(
             driverLocation.value!, endLocation.value!);
-        String encodedPoints = await driverTravelLocalDataSource.getEncodedPoints();
-        List<LatLng> polylineCoordinates = driverTravelLocalDataSource.decodePolyline(encodedPoints);
+        String encodedPoints =
+            await driverTravelLocalDataSource.getEncodedPoints();
+        List<LatLng> polylineCoordinates =
+            driverTravelLocalDataSource.decodePolyline(encodedPoints);
 
         // Obtener los pasos de la ruta
         routeSteps.value = driverTravelLocalDataSource.steps ?? [];
@@ -603,165 +644,180 @@ void onClose() {
       traceRouteDriverToStart();
     }
   }
-
-void launchMapboxNavigationToDestination() async {
+Future<void> launchGoogleMapsNavigationToDestination() async {
   if (endLocation.value == null || driverLocation.value == null) {
-    CustomSnackBar.showError('Error', 'No se pudo obtener la ubicación');
+    CustomSnackBar.showError('Error', 'Espere un momento obteniendo ubicación');
     return;
   }
 
-  try {
-    // Crear los waypoints con coordenadas exactas
-    final wayPoints = [
-      WayPoint(
-        name: "Mi ubicación",
-        latitude: driverLocation.value!.latitude,
-        longitude: driverLocation.value!.longitude,
-        isSilent: true
-      ),
-      WayPoint(
-        name: "Destino Final",
-        latitude: endLocation.value!.latitude,
-        longitude: endLocation.value!.longitude,
-        isSilent: true
-      ),
-    ];
+  final String googleMapsUrl = 'https://www.google.com/maps/dir/?api=1'
+      '&origin=${driverLocation.value!.latitude},${driverLocation.value!.longitude}'
+      '&destination=${endLocation.value!.latitude},${endLocation.value!.longitude}'
+      '&travelmode=driving';
 
-    // Configurar las opciones de navegación
-    final options = MapBoxOptions(
-      mode: MapBoxNavigationMode.drivingWithTraffic,
-      simulateRoute: false,
-      language: "es",
-      units: VoiceUnits.metric,
-      zoom: 18.0,
-      tilt: 30.0,
-      bearing: 0.0,
-      enableRefresh: true,
-      alternatives: true,
-      voiceInstructionsEnabled: true,
-      bannerInstructionsEnabled: true,
-      allowsUTurnAtWayPoints: true,
-      isOptimized: true
-    );
-
-    print('Iniciando navegación con waypoints: ${wayPoints.map((wp) => '${wp.name}: ${wp.latitude},${wp.longitude}').join(' -> ')}');
-
-    final success = await _directions.startNavigation(
-      wayPoints: wayPoints,
-      options: options,
-    );
-
-    if (success == null || !success) {
-      throw Exception('La navegación no se pudo iniciar');
+  if (await canLaunch(googleMapsUrl)) {
+    // Iniciar el rastreo antes de abrir Google Maps
+    if (travelList.isNotEmpty) {
+      await LocationHandler.startTracking(travelList[0].id.toString());
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(Duration(seconds: 5), () {
-        if (!Get.isDialogOpen! && !Get.isSnackbarOpen) {
-          Get.back();
-        }
-      });
-    });
-  } catch (e) {
-    print('Error detallado al iniciar la navegación: $e');
-    CustomSnackBar.showError('Error', 'No se pudo iniciar la navegación: ${e.toString()}');
+    await launch(googleMapsUrl);
+  } else {
+    CustomSnackBar.showError('Error', 'No se pudo abrir Google Maps');
   }
 }
-void launchGoogleMapsNavigation() async {
-  if (endLocation.value == null || driverLocation.value == null) {
-    CustomSnackBar.showError('Error', 'No se pudo obtener la ubicación');
-    return;
-  }
 
-  try {
-    final origin = '${driverLocation.value!.latitude},${driverLocation.value!.longitude}';
-    final destination = '${endLocation.value!.latitude},${endLocation.value!.longitude}';
-    
-    // Agrega los parámetros brand y logo
-    final url = 'https://www.google.com/maps/dir/?api=1'
-        '&origin=$origin'
-        '&destination=$destination'
-        '&travelmode=driving'
-        '&brand=rayo'  // Reemplaza con el nombre de tu app
-        '&logo=https://www.muyinteresante.com/wp-content/uploads/sites/5/2014/01/lightning-3020873_1920.jpg?resize=1370,770O'; // URL pública de tu logo (https://...)
-    
-    if (await canLaunch(url)) {
-      await launch(url, 
-        forceSafariVC: false, // Importante para iOS
-        forceWebView: false   // Abre en la app nativa
-      );
-    } else {
-      throw Exception('No se pudo abrir Google Maps');
-    }
-  } catch (e) {
-    print('Error al abrir Google Maps: $e');
-    CustomSnackBar.showError('Error', 'No se pudo abrir Google Maps: ${e.toString()}');
-  }
-}
-void launchMapboxNavigationStart() async {
+Future<void> launchGoogleMapsNavigationStart() async {
   if (startLocation.value == null || driverLocation.value == null) {
-    CustomSnackBar.showError('Error', 'No se pudo obtener la ubicación');
+    CustomSnackBar.showError('Error', 'Espere un momento obteniendo ubicación');
     return;
   }
 
-  try {
-    // Crear los waypoints con coordenadas exactas
-    final wayPoints = [
-      WayPoint(
-        name: "Mi ubicación",
-        latitude: driverLocation.value!.latitude,
-        longitude: driverLocation.value!.longitude,
-        isSilent: true
-      ),
-      WayPoint(
-        name: "Destino",
-        latitude: startLocation.value!.latitude,
-        longitude: startLocation.value!.longitude,
-        isSilent: true
-      ),
-    ];
+  final String googleMapsUrl = 'https://www.google.com/maps/dir/?api=1'
+      '&origin=${driverLocation.value!.latitude},${driverLocation.value!.longitude}'
+      '&destination=${startLocation.value!.latitude},${startLocation.value!.longitude}'
+      '&travelmode=driving';
 
-    // Configurar las opciones de navegación
-    final options = MapBoxOptions(
-      mode: MapBoxNavigationMode.drivingWithTraffic,
-      simulateRoute: false,
-      language: "es",
-      units: VoiceUnits.metric,
-      zoom: 18.0, // Zoom más cercano para mejor visibilidad
-      tilt: 30.0, // Ángulo de inclinación para mejor perspectiva
-      bearing: 0.0,
-      enableRefresh: true, // Permite actualizar la ruta
-      alternatives: true, // Muestra rutas alternativas si están disponibles
-      voiceInstructionsEnabled: true,
-      bannerInstructionsEnabled: true,
-      allowsUTurnAtWayPoints: true,
-      isOptimized: true
-    );
-
-    print('Iniciando navegación con waypoints: ${wayPoints.map((wp) => '${wp.name}: ${wp.latitude},${wp.longitude}').join(' -> ')}');
-
-    final success = await _directions.startNavigation(
-      wayPoints: wayPoints,
-      options: options,
-    );
-
-    if (success == null || !success) {
-      throw Exception('La navegación no se pudo iniciar');
+  if (await canLaunch(googleMapsUrl)) {
+    // Iniciar el rastreo antes de abrir Google Maps
+    if (travelList.isNotEmpty) {
+      await LocationHandler.startTracking(travelList[0].id.toString());
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(Duration(seconds: 5), () {
-        if (!Get.isDialogOpen! && !Get.isSnackbarOpen) {
-          Get.back();
-        }
-      });
-    });
-  } catch (e) {
-    print('Error detallado al iniciar la navegación: $e');
-    CustomSnackBar.showError('Error', 'No se pudo iniciar la navegación: ${e.toString()}');
+    await launch(googleMapsUrl);
+  } else {
+    CustomSnackBar.showError('Error', 'No se pudo abrir Google Maps');
   }
 }
 
+  void updateNavigationPreference(bool useMapboxNav) async {
+    useMapbox.value = useMapboxNav;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_mapbox', useMapboxNav);
+  }
+
+  Future<void> launchMapboxNavigationToDestination() async {
+   /* if (endLocation.value == null || driverLocation.value == null) {
+      CustomSnackBar.showError('', 'Espere un momente obteniendo ubicasion');
+      return;
+    }*/
+
+    isLoadingNavigation.value = true; // Start loading
+
+    try {
+      final wayPoints = [
+        WayPoint(
+            name: "Mi ubicación",
+            latitude: driverLocation.value!.latitude,
+            longitude: driverLocation.value!.longitude,
+            isSilent: true),
+        WayPoint(
+            name: "Destino Final",
+            latitude: endLocation.value!.latitude,
+            longitude: endLocation.value!.longitude,
+            isSilent: true),
+      ];
+
+      final options = MapBoxOptions(
+          mode: MapBoxNavigationMode.drivingWithTraffic,
+          simulateRoute: false,
+          language: "es",
+          units: VoiceUnits.metric,
+          zoom: 18.0,
+          tilt: 30.0,
+          bearing: 0.0,
+          enableRefresh: true,
+          alternatives: true,
+          voiceInstructionsEnabled: true,
+          bannerInstructionsEnabled: true,
+          allowsUTurnAtWayPoints: true,
+          isOptimized: true);
+
+      final success = await _directions.startNavigation(
+        wayPoints: wayPoints,
+        options: options,
+      );
+
+      if (success == null || !success) {
+        throw Exception('La navegación no se pudo iniciar');
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(Duration(seconds: 5), () {
+          if (!Get.isDialogOpen! && !Get.isSnackbarOpen) {
+            Get.back();
+          }
+        });
+      });
+    } catch (e) {
+      print('Error detallado al iniciar la navegación: $e');
+      CustomSnackBar.showError(
+          'Error', 'No se pudo iniciar la navegación: ${e.toString()}');
+    } finally {
+      isLoadingNavigation.value = false; // Stop loading regardless of outcome
+    }
+  }
+
+  Future<void> launchMapboxNavigationStart() async {
+   /* if (startLocation.value == null || driverLocation.value == null) {
+      CustomSnackBar.showError('', 'espere un momente ');
+      return;
+    }*/
+
+    isLoadingNavigation.value = true; // Start loading
+
+    try {
+      final wayPoints = [
+        WayPoint(
+            name: "Mi ubicación",
+            latitude: driverLocation.value!.latitude,
+            longitude: driverLocation.value!.longitude,
+            isSilent: true),
+        WayPoint(
+            name: "Destino",
+            latitude: startLocation.value!.latitude,
+            longitude: startLocation.value!.longitude,
+            isSilent: true),
+      ];
+
+      final options = MapBoxOptions(
+        mode: MapBoxNavigationMode.drivingWithTraffic,
+        simulateRoute: false,
+        language: "es",
+        units: VoiceUnits.metric,
+        zoom: 18.0,
+        tilt: 30.0,
+        bearing: 0.0,
+        enableRefresh: true,
+        alternatives: true,
+        voiceInstructionsEnabled: true,
+        bannerInstructionsEnabled: true,
+        allowsUTurnAtWayPoints: true,
+        isOptimized: true,
+      );
+
+      final success = await _directions.startNavigation(
+        wayPoints: wayPoints,
+        options: options,
+      );
+
+      if (success == null || !success) {
+        throw Exception('La navegación no se pudo iniciar');
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(Duration(seconds: 5), () {
+          if (!Get.isDialogOpen! && !Get.isSnackbarOpen) {
+            Get.back();
+          }
+        });
+      });
+    } catch (e) {
+      print('Error detallado al iniciar la navegación: $e');
+      CustomSnackBar.showError(
+          'Error', 'No se pudo iniciar la navegación: ${e.toString()}');
+    } finally {
+      isLoadingNavigation.value = false; // Stop loading regardless of outcome
+    }
+  }
 
   void startTravel(BuildContext context) {
     String travelId = travelList.isNotEmpty ? travelList[0].id.toString() : '';
@@ -778,50 +834,51 @@ void launchMapboxNavigationStart() async {
       text: '¿Estás seguro de que deseas iniciar el viaje?',
       confirmBtnText: 'Sí',
       cancelBtnText: 'No',
-      onConfirmBtnTap: () {
+      onConfirmBtnTap: () async {
         Navigator.of(Get.context!).pop();
-        startTravelController
-            .starttravel(StartravelEvent(id_travel: travelList[0].id));
-        travelAlertGetx.fetchCoDetails(FetchtravelsDetailsEvent());
+        isLoadingStartJourney.value = true; // Iniciar loading
 
-        startTravelController.starttravelState.listen((state) {
-          if (state is StarttravelLoading) {
-          } else if (state is AcceptedtravelSuccessfully) {
-            travelStage.value = TravelStage.terminarViaje;
-          _handleSocketConnectionBasedOnStatus("4");
+        try {
+                    await LocationHandler.stopTracking();
 
-            journeyStarted.value = true;
-            markers.removeWhere((m) => m.markerId.value == 'start');
-            polylines.removeWhere(
-                (polyline) => polyline.polylineId.value == 'start_to_end');
-            polylines.removeWhere(
-                (polyline) => polyline.polylineId.value == 'driver_to_start');
-            lastDriverPositionForRouteUpdate = null;
-            updateDriverRouteIfNeeded();
-            final currentTravelGetx = Get.find<CurrentTravelGetx>();
+          startTravelController
+              .starttravel(StartravelEvent(id_travel: travelList[0].id));
+          travelAlertGetx.fetchCoDetails(FetchtravelsDetailsEvent());
 
-            currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
-            launchMapboxNavigationToDestination();
-            CustomSnackBar.showSuccess(
-              'Éxito',
-              'Viaje iniciado correctamente',
-            );
-          } else if (state is StarttravelError) {
-            CustomSnackBar.showError(
-                'Error', 'Viaje ya fue iniciado ${state.message}');
-          }
-        });
+          await startTravelController.starttravelState.listen((state) {
+            if (state is StarttravelLoading) {
+              // Ya estamos mostrando el loading
+            } else if (state is AcceptedtravelSuccessfully) {
+              travelStage.value = TravelStage.terminarViaje;
+              _handleSocketConnectionBasedOnStatus("4");
+
+              journeyStarted.value = true;
+              markers.removeWhere((m) => m.markerId.value == 'start');
+              polylines.removeWhere(
+                  (polyline) => polyline.polylineId.value == 'start_to_end');
+              polylines.removeWhere(
+                  (polyline) => polyline.polylineId.value == 'driver_to_start');
+              lastDriverPositionForRouteUpdate = null;
+              updateDriverRouteIfNeeded();
+              final currentTravelGetx = Get.find<CurrentTravelGetx>();
+
+              currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
+              CustomSnackBar.showSuccess(
+                'Éxito',
+                'Viaje iniciado correctamente',
+              );
+            } else if (state is StarttravelError) {
+              CustomSnackBar.showError(
+                  'Error', 'Viaje ya fue iniciado ${state.message}');
+            }
+          });
+        } catch (e) {
+          CustomSnackBar.showError('Error', 'Error al iniciar el viaje: $e');
+        } finally {
+          isLoadingStartJourney.value = false; // Finalizar loading
+        }
       },
     );
-  }
-
-  void launchNavigationWebView() {
-    if (endLocation.value != null) {
-      Get.to(() => NavigationWebView(
-            destLat: endLocation.value!.latitude,
-            destLng: endLocation.value!.longitude,
-          ));
-    }
   }
 
   void endTravel(BuildContext context) {
@@ -855,6 +912,8 @@ void launchMapboxNavigationStart() async {
       cancelBtnText: 'No',
       onConfirmBtnTap: () async {
         Navigator.of(Get.context!).pop();
+                await LocationHandler.stopTracking();
+
         endTravelController
             .endtravel(EndTravelEvent(id_travel: travelList[0].id));
         travelAlertGetx.fetchCoDetails(FetchtravelsDetailsEvent());
@@ -910,7 +969,9 @@ void launchMapboxNavigationStart() async {
       message: '¿Estás seguro de Cancelar el viaje?',
       confirmText: 'Sí',
       cancelText: 'No',
-      onConfirm: () {
+      onConfirm: () async {
+                await LocationHandler.stopTracking();
+
         final event = CancelTravelEvent(travelwithtariff: travel);
         _cancelTravel.canceltravel(event);
 
@@ -966,23 +1027,23 @@ void launchMapboxNavigationStart() async {
     });
   }
 
-void onMapCreated(GoogleMapController controller) {
-  try {
-    mapController = controller;
-    if (travelList.isNotEmpty) {
-      int idStatus = int.tryParse(travelList[0].id_status.toString()) ?? 0;
-      if ((idStatus == 3 || idStatus == 4) && driverLocation.value != null) {
-        shouldTrackDriver.value = true;
-        isFollowingDriver.value = true;
-        _focusOnDriver();
-      } else {
-        updateMapBounds();
+  void onMapCreated(GoogleMapController controller) {
+    try {
+      mapController = controller;
+      if (travelList.isNotEmpty) {
+        int idStatus = int.tryParse(travelList[0].id_status.toString()) ?? 0;
+        if ((idStatus == 3 || idStatus == 4) && driverLocation.value != null) {
+          shouldTrackDriver.value = true;
+          isFollowingDriver.value = true;
+          _focusOnDriver();
+        } else {
+          updateMapBounds();
+        }
       }
+    } catch (e) {
+      print('Error en onMapCreated: $e');
     }
-  } catch (e) {
-    print('Error en onMapCreated: $e');
   }
-}
 
   void updateTravelStatus(String newStatus) {
     int idStatus = int.tryParse(newStatus) ?? 0;
