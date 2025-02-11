@@ -57,7 +57,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   setupMemoryMonitoring(); 
-  await LocationHandler.initialize();
+//  await LocationHandler.initialize();
 
   print('=========ENVIROMENT SELECTED: $enviromentSelect');
   await dotenv.load(fileName: enviromentSelect);

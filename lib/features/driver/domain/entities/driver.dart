@@ -14,6 +14,7 @@ class Driver {
   String?model;
   String? phone_support;
   String? plates;
+  double? score;
   Driver({
     this.id,
     this.name,
@@ -29,6 +30,7 @@ class Driver {
     this.year,
     this.model,
     this.phone_support,
-    this.plates
+    this.plates,
+    this.score
   });
 }

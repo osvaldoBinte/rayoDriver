@@ -17,9 +17,8 @@ class AppThemeCustom {
         colorScheme: colorScheme,
         scaffoldBackgroundColor: Color.fromARGB(255, 255, 255, 255),
         textTheme: TextTheme(
-            displayLarge: TextStyle(
-                fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-            titleMedium: TextStyle(fontSize: 18, color: Color(0xFF333333)),
+            displayLarge: TextStyle(fontSize: 16, color: Colors.green),
+            titleMedium: TextStyle(fontSize: 16, color: Colors.yellow),
             bodyLarge: TextStyle(fontSize: 16, color: Colors.black),
             bodyMedium: TextStyle(fontSize: 12, color: Colors.grey[600]),
             bodySmall: TextStyle(

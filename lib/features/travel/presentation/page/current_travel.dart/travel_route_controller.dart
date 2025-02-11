@@ -658,7 +658,7 @@ Future<void> launchGoogleMapsNavigationToDestination() async {
   if (await canLaunch(googleMapsUrl)) {
     // Iniciar el rastreo antes de abrir Google Maps
     if (travelList.isNotEmpty) {
-      await LocationHandler.startTracking(travelList[0].id.toString());
+     // await LocationHandler.startTracking(travelList[0].id.toString());
     }
     await launch(googleMapsUrl);
   } else {
@@ -680,7 +680,7 @@ Future<void> launchGoogleMapsNavigationStart() async {
   if (await canLaunch(googleMapsUrl)) {
     // Iniciar el rastreo antes de abrir Google Maps
     if (travelList.isNotEmpty) {
-      await LocationHandler.startTracking(travelList[0].id.toString());
+     // await LocationHandler.startTracking(travelList[0].id.toString());
     }
     await launch(googleMapsUrl);
   } else {
@@ -839,7 +839,7 @@ Future<void> launchGoogleMapsNavigationStart() async {
         isLoadingStartJourney.value = true; // Iniciar loading
 
         try {
-                    await LocationHandler.stopTracking();
+                 //   await LocationHandler.stopTracking();
 
           startTravelController
               .starttravel(StartravelEvent(id_travel: travelList[0].id));
@@ -912,7 +912,7 @@ Future<void> launchGoogleMapsNavigationStart() async {
       cancelBtnText: 'No',
       onConfirmBtnTap: () async {
         Navigator.of(Get.context!).pop();
-                await LocationHandler.stopTracking();
+              //  await LocationHandler.stopTracking();
 
         endTravelController
             .endtravel(EndTravelEvent(id_travel: travelList[0].id));
@@ -971,7 +971,7 @@ Future<void> launchGoogleMapsNavigationStart() async {
       confirmText: 'Sí',
       cancelText: 'No',
       onConfirm: () async {
-                await LocationHandler.stopTracking();
+            //    await LocationHandler.stopTracking();
 
         final event = CancelTravelEvent(travelwithtariff: travel);
         _cancelTravel.canceltravel(event);

@@ -190,7 +190,18 @@ bool getNavigationPreference() {
                           const SizedBox(height: 5),
                          
                           Text(drive.email ?? 'Sin email',
-                              style: Theme.of(context).textTheme.bodyLarge),
+                              style: Theme.of(context).textTheme.displayLarge),
+                              const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${drive.score?.toStringAsFixed(1) ?? 'N/A'}',
+                                style: Theme.of(context).textTheme.displayLarge,
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
