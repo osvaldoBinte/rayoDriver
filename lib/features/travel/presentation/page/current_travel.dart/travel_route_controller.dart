@@ -922,7 +922,8 @@ Future<void> launchGoogleMapsNavigationStart() async {
           if (state is EndtravelSuccessfully) {
             journeyCompleted.value = true;
             travelStage.value = TravelStage.heLlegado;
-
+  await Get.find<NavigationService>()
+                .navigateToHome(selectedIndex: 0);
             CustomSnackBar.showSuccess(
                 'Éxito', 'Viaje terminado correctamente');
             currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());

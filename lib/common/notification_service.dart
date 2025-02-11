@@ -333,14 +333,11 @@ Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
    
    final state = travelByIdController.state.value;
    
-   // Cerrar dialogo de carga
    Get.back();
    
    if (state is TravelByIdAlertLoaded) {
-     await Get.offAll(
-       () => AcceptTravelPage(idTravel: travelId),
-       predicate: (_) => false
-     );
+     Get.off(() => AcceptTravelPage(idTravel: travelId));
+
    } else if (state is TravelByIdAlertFailure) {
      await Get.offAll(() => SplashScreen());
      CustomSnackBar.showError('', 'Viaje ya fue aceptado');
