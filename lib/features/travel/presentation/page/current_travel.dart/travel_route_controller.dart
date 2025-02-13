@@ -61,7 +61,7 @@ class TravelRouteController extends GetxController {
   RxString waitingFor = ''.obs;
   final ChangeavailabilityGetx _driverGetx = Get.find<ChangeavailabilityGetx>();
   final double driverZoomLevel = 20;
-  final double navigationZoom = 20.0;
+  final double navigationZoom = 14.0;
   final double navigationTilt = 60.0;
   RxBool isFollowingDriver = true.obs;
   RxBool isLoadingStartJourney = false.obs;
@@ -177,7 +177,7 @@ void _setupLocationIsolateListener() {
         ).then((icon) => destinationIcon.value = icon),
         BitmapDescriptor.fromAssetImage(
           ImageConfiguration(devicePixelRatio: 2.5),
-          'assets/images/mapa/drivermakert.png',
+          'assets/images/taxi/taxi_norte.png',
         ).then((icon) => driverIcon.value = icon),
       ];
 
@@ -294,6 +294,8 @@ void _setupLocationIsolateListener() {
         if (mapController != null && driverLocation.value != null) {
           _focusOnDriver();
         }
+         _addMarkerWithoutBounds(startLocation.value!, isStartPlace: false);
+
       }
       if (idStatus == 6) {
         isIdStatusSix.value = true;
@@ -317,14 +319,14 @@ void _setupLocationIsolateListener() {
         isFollowingDriver.value) {
       try {
         double bearing = 0.0;
-        if (lastDriverPositionForRouteUpdate != null) {
+     /*   if (lastDriverPositionForRouteUpdate != null) {
           bearing = _calculateBearing(
             lastDriverPositionForRouteUpdate!.latitude,
             lastDriverPositionForRouteUpdate!.longitude,
             driverLocation.value!.latitude,
             driverLocation.value!.longitude,
           );
-        }
+        }*/
 
         mapController
             ?.animateCamera(
@@ -367,49 +369,204 @@ void _setupLocationIsolateListener() {
   }
 
   void _addMarkerWithoutBounds(LatLng latLng,
-      {required bool isStartPlace, bool isDriver = false}) {
-    final updatedMarkers = Set<Marker>.from(markers.value);
+    {required bool isStartPlace, bool isDriver = false}) {
+  final updatedMarkers = Set<Marker>.from(markers.value);
+  String title;
+  BitmapDescriptor markerIcon;
+  String markerId;
 
-    if (isDriver) {
-      updatedMarkers.removeWhere((m) => m.markerId.value == 'driver');
-      updatedMarkers.add(
-        Marker(
-          markerId: MarkerId('driver'),
-          position: latLng,
-          infoWindow: InfoWindow(title: 'Conductor'),
-          icon: driverIcon.value,
-          anchor: Offset(0.5, 0.5), // Centrar el icono en la posición
-        ),
-      );
-      driverLocation.value = latLng;
-    } else if (isStartPlace) {
-      updatedMarkers.removeWhere((m) => m.markerId.value == 'start');
-      updatedMarkers.add(
-        Marker(
-          markerId: MarkerId('start'),
-          position: latLng,
-          infoWindow: InfoWindow(title: 'Inicio'),
-          icon: startIcon.value,
-          anchor: Offset(0.5, 0.5), // Centrar el icono en la posición
-        ),
-      );
-      startLocation.value = latLng;
-    } else {
-      updatedMarkers.removeWhere((m) => m.markerId.value == 'destination');
-      updatedMarkers.add(
-        Marker(
-          markerId: MarkerId('destination'),
-          position: latLng,
-          infoWindow: InfoWindow(title: 'Destino'),
-          icon: destinationIcon.value,
-          anchor: Offset(0.5, 0.5), // Centrar el icono en la posición
-        ),
-      );
-      endLocation.value = latLng;
-    }
-
-    markers.value = updatedMarkers;
+  if (isDriver) {
+    title = 'Conductor';
+    markerIcon = driverIcon.value;
+    markerId = 'driver';
+    driverLocation.value = latLng;
+  } else if (isStartPlace) {
+    title = 'Inicio';
+    markerIcon = startIcon.value;
+    markerId = 'start';
+    startLocation.value = latLng;
+  } else {
+    title = 'Destino';
+    markerIcon = destinationIcon.value;
+    markerId = 'destination';
+    endLocation.value = latLng;
   }
+
+  updatedMarkers.removeWhere((m) => m.markerId.value == markerId);
+  updatedMarkers.add(
+    Marker(
+      markerId: MarkerId(markerId),
+      position: latLng,
+      infoWindow: InfoWindow(title: title),
+      icon: markerIcon,
+      anchor: Offset(0.5, 0.5), // Centrar el icono en la posición
+      onTap: () {
+        if (!isDriver) { // Solo mostrar preview para inicio y destino, no para el conductor
+          _showLocationPreview(latLng, title);
+        }
+      },
+    ),
+  );
+
+  markers.value = updatedMarkers;
+}
+
+
+void _showLocationPreview(LatLng location, String title) {
+  final colorScheme = Theme.of(Get.context!).colorScheme;
+  final String streetViewUrl = 'https://maps.googleapis.com/maps/api/streetview?'
+    'size=600x400'
+    '&location=${location.latitude},${location.longitude}'
+    '&fov=90'
+    '&heading=70'
+    '&pitch=0'
+    '&key=AIzaSyBAVJDSpCXiLRhVTq-MA3RgZqbmxm1wD1I';
+
+  Get.dialog(
+    Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: Get.width * 0.85,
+        decoration: BoxDecoration(
+          color: colorScheme.card,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Cabecera
+            Container(
+              padding: EdgeInsets.fromLTRB(20, 16, 8, 16),
+              decoration: BoxDecoration(
+                color: colorScheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.textButton,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: colorScheme.CurvedNavigationIcono2),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+            ),
+            // Contenedor de imagen
+            Container(
+              height: Get.height * 0.3,
+              margin: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colorScheme.loaderbaseColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      streetViewUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: colorScheme.loaderbaseColor,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.loader),
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / 
+                                    loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: colorScheme.loaderbaseColor,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 48,
+                                color: colorScheme.Statusaccepted,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Vista no disponible',
+                                style: TextStyle(
+                                  color: colorScheme.snackBartext2,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    // Overlay con coordenadas
+                  
+                  ],
+                ),
+              ),
+            ),
+            // Botones de acción
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                 
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => Get.back(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.buttonColormap,
+                      foregroundColor: colorScheme.textButton,
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('Cerrar'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    barrierColor: Colors.black54,
+  );
+}
 
   LatLngBounds createLatLngBoundsFromMarkers() {
     if (markers.isEmpty) {
@@ -645,10 +802,7 @@ void _setupLocationIsolateListener() {
     }
   }
 Future<void> launchGoogleMapsNavigationToDestination() async {
-  if (endLocation.value == null || driverLocation.value == null) {
-    CustomSnackBar.showError('Error', 'Espere un momento obteniendo ubicación');
-    return;
-  }
+ 
 
   final String googleMapsUrl = 'https://www.google.com/maps/dir/?api=1'
       '&origin=${driverLocation.value!.latitude},${driverLocation.value!.longitude}'
@@ -667,10 +821,7 @@ Future<void> launchGoogleMapsNavigationToDestination() async {
 }
 
 Future<void> launchGoogleMapsNavigationStart() async {
-  if (startLocation.value == null || driverLocation.value == null) {
-    CustomSnackBar.showError('Error', 'Espere un momento obteniendo ubicación');
-    return;
-  }
+ 
 
   final String googleMapsUrl = 'https://www.google.com/maps/dir/?api=1'
       '&origin=${driverLocation.value!.latitude},${driverLocation.value!.longitude}'

@@ -124,6 +124,7 @@ flutter:
      - assets/images/mapa/drivermakert.png
      - assets/images/viajes/taxi.png
      - assets/images/viajes/taxi2.png
+     - assets/images/taxi/taxi_norte.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

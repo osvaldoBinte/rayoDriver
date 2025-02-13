@@ -138,43 +138,123 @@ class AcceptTravelPage extends StatelessWidget {
   return SizedBox.shrink();
 }
 else {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              controller.rejectTravel();
-                            },
-                            child: Text('Rechazar Viaje'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.error,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 20),
-                              textStyle: TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Flexible(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              controller.showInputAmountAlert(
-                                  context, controller);
-                            },
-                            child: Text('Negociar Viaje'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.buttonColormap,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 20),
-                              textStyle: TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
+                    return Positioned(
+  bottom: 30,
+  left: 20,
+  right: 20,
+  child: Obx(() {
+    if (controller.travelByIdController.state.value is TravelByIdAlertLoaded) {
+      if (!controller.isIdStatusOne.value) {
+        return SizedBox.shrink();
+      } else {
+        // Obtener el ancho de la pantalla
+        final screenWidth = MediaQuery.of(context).size.width;
+        
+        // Definir tamaños responsivos
+        final double fontSize = screenWidth < 360 ? 14.0 : 18.0;
+        final double horizontalPadding = screenWidth < 360 ? 10.0 : 20.0;
+        final double verticalPadding = screenWidth < 360 ? 15.0 : 20.0;
+        
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: ElevatedButton(
+                onPressed: () {
+                  controller.rejectTravel();
+                },
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Rechazar Viaje',
+                    style: TextStyle(fontSize: fontSize),
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: verticalPadding,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: screenWidth < 360 ? 5 : 10),
+            Flexible(
+              child: ElevatedButton(
+                onPressed: () {
+                  controller.showInputAmountAlert(context, controller);
+                },
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Negociar Viaje',
+                    style: TextStyle(fontSize: fontSize),
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.buttonColormap,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: verticalPadding,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+    } else if (controller.travelByIdController.state.value is TravelByIdAlertLoading) {
+      return Center(child: CircularProgressIndicator());
+    } else if (controller.travelByIdController.state.value is TravelByIdAlertFailure) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final double fontSize = screenWidth < 360 ? 14.0 : 18.0;
+      
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error al cargar los detalles del viaje'),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.buttonColormap,
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth < 360 ? 30 : 50,
+                  vertical: screenWidth < 360 ? 15 : 20,
+                ),
+                textStyle: TextStyle(fontSize: fontSize),
+              ),
+              onPressed: () {
+                controller.travelByIdController.fetchCoDetails(
+                  TravelByIdEventDetailsEvent(idTravel: idTravel),
+                );
+              },
+              child: Text('Reintentar'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth < 360 ? 30 : 50,
+                  vertical: screenWidth < 360 ? 15 : 20,
+                ),
+                textStyle: TextStyle(fontSize: fontSize),
+              ),
+              onPressed: () {
+                controller.rejectTravel();
+              },
+              child: Text('Regresar al inicio'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return SizedBox();
+    }
+  }),
+);
                   }
                 } else if (controller.travelByIdController.state.value
                     is TravelByIdAlertLoading) {

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:rayo_taxi/common/settings/routes_names.dart';
 import 'package:rayo_taxi/features/AuthS/AuthService.dart';
 import 'package:rayo_taxi/features/driver/presentation/getxs/changeAvailability/changeAvailability_getx.dart';
+import 'package:rayo_taxi/features/travel/data/datasources/socket_driver_data_source.dart';
 import 'package:rayo_taxi/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rayo_taxi/features/travel/presentation/page/accept_travel/accept_travel_page.dart';
@@ -81,6 +82,8 @@ class MapContent extends StatefulWidget {
     }
   }
 class _MapContentState extends State<MapContent> {
+    final SocketDriverDataSource socketDriver = SocketDriverDataSourceImpl();
+
   @override
   Widget build(BuildContext context) {
     if (widget.travelList.isNotEmpty) {
@@ -88,6 +91,7 @@ class _MapContentState extends State<MapContent> {
       return TravelRoute(travelList: widget.travelList);
     } else {
           _checkTravelId();
+      socketDriver.disconnect();
 
       return MidireccionPage();
     }

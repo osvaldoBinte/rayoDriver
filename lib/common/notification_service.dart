@@ -33,7 +33,7 @@ class NotificationService {
   final GlobalKey<NavigatorState> navigatorKey;
   final currentTravelGetx = Get.find<CurrentTravelGetx>();
   final TravelsAlertGetx travelAlertGetx = Get.find<TravelsAlertGetx>();
-      final travelByIdController = Get.find<TravelByIdAlertGetx>();
+  final travelByIdController = Get.find<TravelByIdAlertGetx>();
 
   RemoteMessage? initialMessage;
 
@@ -114,13 +114,8 @@ class NotificationService {
   void _handleNotificationNavigation(RemoteMessage message) {
     final NotificationController notificationController =
         Get.find<NotificationController>();
-            notificationController.updateNotification(message); 
+    notificationController.updateNotification(message);
     final message2 = notificationController.lastNotification.value;
-
-
-
-
-
 
     final int? travelId = int.tryParse(message.data['travel'] ?? '');
     print('TravelId: $travelId');
@@ -128,18 +123,17 @@ class NotificationService {
       final title = message2.notification!.title!;
       if (title == 'Nuevo viaje!!') {
         print('Navigating to AcceptTravelPage with travel ID: $travelId');
-       
-        if (travelId != null) {
-                    _handleNotificationClick(message.data, title);
 
-         // Get.offAll(() => AcceptTravelPage(idTravel: travelId));
+        if (travelId != null) {
+          _handleNotificationClick(message.data, title);
+
+          // Get.offAll(() => AcceptTravelPage(idTravel: travelId));
         } else {
           print('Error: travelId is null');
         }
       } else {
-        
         print('Navigating to HomePage');
-        }
+      }
     }
   }
 
@@ -183,11 +177,9 @@ class NotificationService {
           }
         }
         if (title == 'Propuesta de viaje rechazada') {
-          
           if (Get.context != null) {
             _showQuickAlert(context, title, body);
           }
-         
         } else {
           print('El contexto es nulo o el título no coincide');
         }
@@ -310,51 +302,51 @@ class NotificationService {
       navigateToHome();
     }
   }
-Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
- if (travelId == null) {
-   CustomSnackBar.showError('', 'Viaje no encontrado');
-   return;
- }
 
- Get.dialog(
-   WillPopScope(
-     onWillPop: () async => false,
-     child: const Center(
-       child: CircularProgressIndicator(),
-     ),
-   ),
-   barrierDismissible: false,
- );
+  Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
+    if (travelId == null) {
+      CustomSnackBar.showError('', 'Viaje no encontrado');
+      return;
+    }
 
- try {
-   await travelByIdController
-     .fetchCoDetails(TravelByIdEventDetailsEvent(idTravel: travelId));
-   
-   
-   final state = travelByIdController.state.value;
-   
-   Get.back();
-   
-   if (state is TravelByIdAlertLoaded) {
-     Get.off(() => AcceptTravelPage(idTravel: travelId));
+    Get.dialog(
+      WillPopScope(
+        onWillPop: () async => false,
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      barrierDismissible: false,
+    );
 
-   } else if (state is TravelByIdAlertFailure) {
-     await Get.offAll(() => SplashScreen());
-     CustomSnackBar.showError('', 'Viaje ya fue aceptado');
-   }
- } catch (e) {
-   Get.back(); // Cerrar dialogo en caso de error
-   print('Error fetching travel details: $e');
-   CustomSnackBar.showError('', 'Viaje ya fue aceptado');
- }
-}
+    try {
+      await travelByIdController
+          .fetchCoDetails(TravelByIdEventDetailsEvent(idTravel: travelId));
+
+      final state = travelByIdController.state.value;
+
+      Get.back();
+
+      if (state is TravelByIdAlertLoaded) {
+        Get.off(() => AcceptTravelPage(idTravel: travelId));
+      } else if (state is TravelByIdAlertFailure) {
+        await Get.offAll(() => SplashScreen());
+        CustomSnackBar.showError('', 'Viaje ya fue aceptado');
+      }
+    } catch (e) {
+      Get.back(); // Cerrar dialogo en caso de error
+      print('Error fetching travel details: $e');
+      CustomSnackBar.showError('', 'Viaje ya fue aceptado');
+    }
+  }
+
   void _handleNotificationClick(Map<String, dynamic> data, String? title) {
     final int? travelId = int.tryParse(data['travel'] ?? '');
     final context = navigatorKey.currentState?.overlay?.context;
 
     if (title == 'Nuevo viaje!!') {
       _handleTravelFetch(travelId, context);
-    } 
+    }
   }
 
   void _showQuickAlert(BuildContext context, String title, String body) {
@@ -376,11 +368,10 @@ Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
           AuthService().clearCurrenttravel();
           currentTravelGetx.fetchCoDetails(FetchgetDetailsEvent());
           Navigator.of(Get.context!).pop();
-        } else if (title == 'Propuesta de viaje rechazada'){
-           await AuthService().clearCurrenttravel();
-      await Get.find<NavigationService>().navigateToHome(selectedIndex: 1);
-   
-        }else {
+        } else if (title == 'Propuesta de viaje rechazada') {
+          await AuthService().clearCurrenttravel();
+          await Get.find<NavigationService>().navigateToHome(selectedIndex: 1);
+        } else {
           Navigator.of(Get.context!).pop();
         }
       },
@@ -416,7 +407,7 @@ Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
         return 'Cargando...';
       }
 
-     showCustomAlert(
+      showCustomAlert(
         context: Get.context!,
         type: CustomAlertType.warning,
         title: 'Nueva oferta',
@@ -445,21 +436,31 @@ Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
                 ],
               ),
             ),
-            Obx(() => Text(
-                  inputAmount.value.isNotEmpty
-                      ? 'Monto ofertado: \$${inputAmount.value}'
-                      : '',
+            Obx(() {
+              if (inputAmount.value.isNotEmpty) {
+                String displayAmount = inputAmount.value.length > 6
+                    ? '${inputAmount.value.substring(0, 6)}...'
+                    : inputAmount.value;
+                return Text(
+                  'Monto ofertado: \$${displayAmount}',
                   style: TextStyle(fontSize: 16),
-                )),
+                );
+              } else {
+                return SizedBox();
+              }
+            }),
             SizedBox(height: 10),
             TextField(
               controller: priceController,
               keyboardType: TextInputType.number,
               onChanged: (value) {
-  inputAmount.value = value;
-  final truncatedValue = value.length > 8 ? '${value.substring(0, 7)}...' : value;
-  buttonText.value = value.isNotEmpty ? "Ofertar \$${truncatedValue}" : "Confirmar";
-},
+                inputAmount.value = value;
+                final truncatedValue =
+                    value.length > 5 ? '${value.substring(0, 5)}...' : value;
+                buttonText.value = value.isNotEmpty
+                    ? "Ofertar \$${truncatedValue}"
+                    : "Confirmar";
+              },
               decoration: InputDecoration(
                 labelText: 'Importe \$ MXN',
                 hintText: '',
@@ -532,82 +533,91 @@ Future<void> _handleTravelFetch(int? travelId, BuildContext? context) async {
                   child: Text("Rechazar"),
                 ),
                 Obx(() => ElevatedButton(
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Theme.of(context).colorScheme.secondary2,
-  ),
-  onPressed: () async {
-    if (inputAmount.value.isNotEmpty) {
-      final numericAmount = int.tryParse(inputAmount.value) ?? 0;
-      final currentTarifa = travel.cost?? 0;
-      
-      if (numericAmount < currentTarifa) {
-       QuickAlert.show(
-  context: Get.context!,
-  type: QuickAlertType.error,
-  title: 'Importe inválido',
-  text: 'El Importe debe ser mayor a \$${travel.cost} MXN',
-  confirmBtnText: 'Entendido',
-  confirmBtnColor: Theme.of(Get.context!).colorScheme.error,
-  borderRadius: 8,
-  titleColor: Theme.of(Get.context!).colorScheme.error,
-);
-        return;
-      }
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.secondary2,
+                      ),
+                      onPressed: () async {
+                        if (inputAmount.value.isNotEmpty) {
+                          final numericAmount =
+                              int.tryParse(inputAmount.value) ?? 0;
+                          final currentTarifa = travel.cost ?? 0;
 
-      final offerController = Get.find<OfferNegotiationGetx>();
-      final travelObj = Travelwithtariff(
-        travelId: travelId,
-        tarifa: numericAmount,
-        driverId: driverId
-      );
-      final event = OffernegotiationEvent(travel: travelObj);
+                          if (numericAmount < currentTarifa) {
+                            QuickAlert.show(
+                              context: Get.context!,
+                              type: QuickAlertType.error,
+                              title: 'Importe inválido',
+                              text:
+                                  'El Importe debe ser mayor a \$${travel.cost} MXN',
+                              confirmBtnText: 'Entendido',
+                              confirmBtnColor:
+                                  Theme.of(Get.context!).colorScheme.error,
+                              borderRadius: 8,
+                              titleColor:
+                                  Theme.of(Get.context!).colorScheme.error,
+                            );
+                            return;
+                          }
 
-      await offerController.OfferNegotiationtravel(event);
+                          final offerController =
+                              Get.find<OfferNegotiationGetx>();
+                          final travelObj = Travelwithtariff(
+                              travelId: travelId,
+                              tarifa: numericAmount,
+                              driverId: driverId);
+                          final event =
+                              OffernegotiationEvent(travel: travelObj);
 
-      if (offerController.message.value.contains('correctamente')) {
-        CustomSnackBar.showSuccess(
-          'Éxito',
-          offerController.message.value,
-        );
-        await AuthService().clearCurrenttravel();
-        navigateToHome();
-      } else {
-        CustomSnackBar.showError(
-          'Error',
-          offerController.message.value,
-        );
-      }
-    } else {
-      // Lógica existente para aceptar sin contraoferta
-      final travel = Travelwithtariff(
-        travelId: travelId,
-        tarifa: int.tryParse(inputAmount.value) ?? 0,
-        driverId: driverId
-      );
+                          await offerController.OfferNegotiationtravel(event);
 
-      final acceptController = Get.find<AcceptWithCounteroffeGetx>();
-      final event = AcceptwithcounteroffeEvent(travel: travel);
+                          if (offerController.message.value
+                              .contains('correctamente')) {
+                            CustomSnackBar.showSuccess(
+                              'Éxito',
+                              offerController.message.value,
+                            );
+                            await AuthService().clearCurrenttravel();
+                            navigateToHome();
+                          } else {
+                            CustomSnackBar.showError(
+                              'Error',
+                              offerController.message.value,
+                            );
+                          }
+                        } else {
+                          // Lógica existente para aceptar sin contraoferta
+                          final travel = Travelwithtariff(
+                              travelId: travelId,
+                              tarifa: int.tryParse(inputAmount.value) ?? 0,
+                              driverId: driverId);
 
-      await acceptController.acceptedtravel(event);
+                          final acceptController =
+                              Get.find<AcceptWithCounteroffeGetx>();
+                          final event =
+                              AcceptwithcounteroffeEvent(travel: travel);
 
-      if (acceptController.message.value.contains('correctamente')) {
-        CustomSnackBar.showSuccess(
-          'Éxito',
-          acceptController.message.value,
-        );
-        await AuthService().clearCurrenttravel();
-        navigateToHome();
-      } else {
-        CustomSnackBar.showError(
-          'Error',
-          acceptController.message.value,
-        );
-        Get.back();
-      }
-    }
-  },
-  child: Text(buttonText.value),
-))
+                          await acceptController.acceptedtravel(event);
+
+                          if (acceptController.message.value
+                              .contains('correctamente')) {
+                            CustomSnackBar.showSuccess(
+                              'Éxito',
+                              acceptController.message.value,
+                            );
+                            await AuthService().clearCurrenttravel();
+                            navigateToHome();
+                          } else {
+                            CustomSnackBar.showError(
+                              'Error',
+                              acceptController.message.value,
+                            );
+                            Get.back();
+                          }
+                        }
+                      },
+                      child: Text(buttonText.value),
+                    ))
               ],
             ),
           ],

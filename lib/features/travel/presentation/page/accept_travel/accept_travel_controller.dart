@@ -55,8 +55,7 @@ class AcceptTravelController extends GetxController {
 
   late GoogleMapController mapController;
   final MapaLocalDataSource travelLocalDataSource = MapaLocalDataSourceImp();
-  final MapaLocalDataSource driverTravelLocalDataSource =
-      MapaLocalDataSourceImp();
+
 
   StreamSubscription<Position>? positionStreamSubscription;
   late StreamSubscription<ConnectivityResult> connectivitySubscription;
@@ -364,263 +363,282 @@ class AcceptTravelController extends GetxController {
       return 'Dirección no disponible';
     }
   }
-
   void showInputAmountAlert(
-      BuildContext context, AcceptTravelController controller) {
-    final RxString inputAmount = "".obs;
-    final travel = (controller.travelByIdController.state.value
-            is TravelByIdAlertLoaded)
-        ? (controller.travelByIdController.state.value as TravelByIdAlertLoaded)
-            .travels[0]
-        : null;
-    final travelCost = travel?.cost ?? '0';
-    final RxString buttonText = "Confirmar \$${travelCost.toString()}".obs;
-    final RxBool isLoading = false.obs;
-    final RxString startAddress = "Cargando dirección...".obs;
-    final RxString endAddress = "Cargando dirección...".obs;
+    BuildContext context, AcceptTravelController controller) {
+  final RxString inputAmount = "".obs;
+  final travel = (controller.travelByIdController.state.value
+          is TravelByIdAlertLoaded)
+      ? (controller.travelByIdController.state.value as TravelByIdAlertLoaded)
+          .travels[0]
+      : null;
+  final travelCost = travel?.cost ?? '0';
+  final RxString buttonText = "Confirmar \$${travelCost.toString()}".obs;
+  final RxBool isLoading = false.obs;
+  final RxString startAddress = "Cargando dirección...".obs;
+  final RxString endAddress = "Cargando dirección...".obs;
 
-    controller.amountController.clear();
+  controller.amountController.clear();
 
-    if (travel != null) {
-      getAddressFromCoordinates(
-        double.parse(travel.start_latitude),
-        double.parse(travel.start_longitude),
-      ).then((address) => startAddress.value = address);
+  if (travel != null) {
+    getAddressFromCoordinates(
+      double.parse(travel.start_latitude),
+      double.parse(travel.start_longitude),
+    ).then((address) => startAddress.value = address);
 
-      getAddressFromCoordinates(
-        double.parse(travel.end_latitude),
-        double.parse(travel.end_longitude),
-      ).then((address) => endAddress.value = address);
-    }
+    getAddressFromCoordinates(
+      double.parse(travel.end_latitude),
+      double.parse(travel.end_longitude),
+    ).then((address) => endAddress.value = address);
+  }
 
-    showCustomAlert(
-      context: Get.context!,
-      type: CustomAlertType.warning,
-      title: 'Nueva oferta',
-      message: '',
-      confirmText: '',
-      cancelText: null,
-      customWidget: Obx(() {
-        if (isLoading.value) {
-          return Center(
-            child: SpinKitThreeInOut(
-              color: Theme.of(context).primaryColor,
-              size: 50.0,
-            ),
-          );
-        } else {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Image.asset(
-                          'assets/images/mapa/origen.png',
-                          width: 16,
-                          height: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Origen:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Obx(() => Text(
-                                    startAddress.value,
-                                    style: TextStyle(fontSize: 13),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  )),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Image.asset(
-                          'assets/images/mapa/destino.png',
-                          width: 16,
-                          height: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Destino:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Obx(() => Text(
-                                    endAddress.value,
-                                    style: TextStyle(fontSize: 13),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  )),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 20),
-              RichText(
-                text: TextSpan(
-                  text: 'Costo del viaje ',
-                  style: TextStyle(fontSize: 18, color: Colors.black),
-                  children: [
-                    TextSpan(
-                      text: '\$${travelCost.toString()} MXN',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 10),
-              Obx(() => inputAmount.value.isNotEmpty
-                  ? RichText(
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 16, color: Colors.black),
-                        text: 'Monto ofertado: ',
+  showCustomAlert(
+    context: Get.context!,
+    type: CustomAlertType.warning,
+    title: 'Nueva oferta',
+    message: '',
+    confirmText: '',
+    cancelText: null,
+    customWidget: Obx(() {
+      if (isLoading.value) {
+        return Center(
+          child: SpinKitThreeInOut(
+            color: Theme.of(context).primaryColor,
+            size: 50.0,
+          ),
+        );
+      } else {
+        final screenHeight = MediaQuery.of(context).size.height;
+        final maxHeight = screenHeight * 0.7;
+
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: maxHeight,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          TextSpan(
-                            text:
-                                '\$${inputAmount.value.length > 10 ? inputAmount.value.substring(0, 10) + '...' : inputAmount.value} MXN',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Image.asset(
+                            'assets/images/mapa/origen.png',
+                            width: 16,
+                            height: 16,
                           ),
-                        ],
-                      ),
-                    )
-                  : SizedBox.shrink()),
-              SizedBox(height: 10),
-              TextField(
-                controller: controller.amountController,
-  keyboardType: TextInputType.numberWithOptions(decimal: true), // Modificación aquí
-                onChanged: (value) {
-                  inputAmount.value = value;
-                  buttonText.value = value.isNotEmpty
-                      ? "Ofertar \$${value.length > 8 ? value.substring(0, 8) : value}"
-                      : "Confirmar \$${travelCost.toString()}";
-                },
-                decoration: InputDecoration(
-                  labelText: 'Importe \$ MXN',
-                  hintText: '',
-                  labelStyle: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.buttonColormap,
-                      width: 2.0,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(
-                      color: Colors.grey[300]!,
-                      width: 1.5,
-                    ),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.attach_money,
-                    color: Colors.green,
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: Obx(() => ElevatedButton(
-                          onPressed: () async {
-                                                     if (isLoading.value)
-                              return;
-                            String montoStr =
-                                controller.amountController.text.trim();
-                                
-                            if (montoStr.isNotEmpty && double.parse(montoStr) < (travel?.cost as double)) {
-                              QuickAlert.show(
-                                context: Get.context!,
-                                type: QuickAlertType.error,
-                                title: 'Importe inválido',
-                                text: 'El monto ofertado debe ser mayor al costo del viaje',
-                              );
-                              return;
-                            }
-                            isLoading.value = true;
-                            try {
-                              controller.amountController.clear();
-                              if (buttonText.value ==
-                                  "Confirmar \$${travelCost.toString()}") {
-                                await controller.acceptTravel(Get.context!);
-                              } else {
-                                await controller
-                                    .processAndSubmitAmount(montoStr);
-                              }
-                              Get.back();
-                            } finally {
-                              isLoading.value = false;
-                              Get.back();
-                            }
-                          },
-                          child: Text.rich(
-                            TextSpan(
-                              text: buttonText.value.split(" ")[0] + " ",
-                              style: TextStyle(fontSize: 14),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                TextSpan(
-                                  text: buttonText.value.split(" ")[1],
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                Text(
+                                  'Origen:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
+                                Obx(() => Text(
+                                      startAddress.value,
+                                      style: TextStyle(fontSize: 13),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    )),
                               ],
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.buttonColormap2,
-                            padding: EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 8), // Adjusted padding
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/mapa/destino.png',
+                            width: 16,
+                            height: 16,
                           ),
-                        )),
-                  )
-                ],
-              ),
-            ],
-          );
-        }
-      }),
-    );
-  }
-}
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Destino:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Obx(() => Text(
+                                      endAddress.value,
+                                      style: TextStyle(fontSize: 13),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    )),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 20),
+                RichText(
+                  text: TextSpan(
+                    text: 'Costo del viaje ',
+                    style: TextStyle(fontSize: 18, color: Colors.black),
+                    children: [
+                      TextSpan(
+                        text: '\$${travelCost.toString()} MXN',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10),
+                Obx(() {
+                  if (inputAmount.value.isNotEmpty) {
+                    String displayAmount = inputAmount.value.length > 6
+                        ? '${inputAmount.value.substring(0, 6)}...'
+                        : inputAmount.value;
+                    return Text(
+                      'Monto ofertado: \$${displayAmount}',
+                      style: TextStyle(fontSize: 16),
+                    );
+                  } else {
+                    return SizedBox();
+                  }
+                }),
+                SizedBox(height: 10),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: TextField(
+                    controller: controller.amountController,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (value) {
+                      inputAmount.value = value;
+                      if (value.isNotEmpty) {
+                        buttonText.value = "Ofertar \$${value.length > 8 ? value.substring(0, 8) : value}";
+                      } else {
+                        buttonText.value = "Confirmar \$${travelCost.toString()}";
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Importe \$ MXN',
+                      hintText: '',
+                      labelStyle: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.buttonColormap,
+                          width: 2.0,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                          width: 1.5,
+                        ),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.attach_money,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: Obx(() => ElevatedButton(
+                              onPressed: () async {
+                                if (isLoading.value) return;
+                                String montoStr =
+                                    controller.amountController.text.trim();
+
+                                if (montoStr.isNotEmpty &&
+                                    double.parse(montoStr) <
+                                        (travel?.cost as double)) {
+                                  QuickAlert.show(
+                                    context: Get.context!,
+                                    type: QuickAlertType.error,
+                                    title: 'Importe inválido',
+                                    text:
+                                        'El monto ofertado debe ser mayor al costo del viaje',
+                                  );
+                                  return;
+                                }
+                                isLoading.value = true;
+                                try {
+                                  controller.amountController.clear();
+                                  if (buttonText.value ==
+                                      "Confirmar \$${travelCost.toString()}") {
+                                    await controller.acceptTravel(Get.context!);
+                                  } else {
+                                    await controller
+                                        .processAndSubmitAmount(montoStr);
+                                  }
+                                  Get.back();
+                                } finally {
+                                  isLoading.value = false;
+                                }
+                              },
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: buttonText.value.split(" ")[0] + " ",
+                                    style: TextStyle(fontSize: 14),
+                                    children: [
+                                      TextSpan(
+                                        text: buttonText.value.split(" ")[1],
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .buttonColormap2,
+                                padding: EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 8),
+                              ),
+                            )),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }),
+  );
+}}
