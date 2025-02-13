@@ -10,7 +10,6 @@ import 'package:rayo_taxi/features/driver/presentation/pages/login_driver_page.d
 import 'package:rayo_taxi/features/travel/presentation/page/accept_travel/accept_travel_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
-
 class SplashScreen extends StatefulWidget {
   final RemoteMessage? initialMessage;
 
@@ -31,74 +30,36 @@ class _SplashScreenState extends State<SplashScreen> {
     requestLocationPermission();
   }
 Future<void> requestLocationPermission() async {
-  // Primero verificar si el servicio de ubicación está habilitado
+  // Verificar si el servicio de ubicación está habilitado
   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
     await Geolocator.openLocationSettings();
     return Future.error('Servicios de ubicación desactivados');
   }
 
-  // Solicitar permiso de ubicación mientras la app está en uso
+  // Verificar permiso de ubicación
   LocationPermission permission = await Geolocator.checkPermission();
+  
+  // Si los permisos están denegados, primero solicitar el permiso básico
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied) {
+      await Geolocator.openLocationSettings();
       return Future.error('Permisos de ubicación denegados');
     }
   }
 
-  // Si los permisos están denegados permanentemente, mostrar diálogo
-  if (permission == LocationPermission.deniedForever) {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Permisos de ubicación'),
-          content: Text(
-            'Esta aplicación necesita acceso a la ubicación en segundo plano para funcionar correctamente. '
-            'Por favor, habilita el permiso "Permitir todo el tiempo" en la configuración.',
-          ),
-          actions: [
-            TextButton(
-              child: Text('Abrir Configuración'),
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await Geolocator.openAppSettings();
-              },
-            ),
-          ],
-        );
-      },
-    );
-    return;
+  // Para permisos denegados permanentemente o solo mientras se usa
+  if (permission == LocationPermission.deniedForever || 
+      permission == LocationPermission.whileInUse) {
+   
+    // Abrir directamente la configuración de ubicación del sistema
+    await Geolocator.openLocationSettings();
+    return Future.error('Se requieren permisos de ubicación en todo momento');
   }
 
-  // Si ya tenemos permisos básicos, solicitar permisos en segundo plano
-  if (permission == LocationPermission.whileInUse) {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Permisos adicionales necesarios'),
-          content: Text(
-            'Para proporcionar un mejor servicio, necesitamos acceder a tu ubicación incluso cuando la app está en segundo plano. '
-            'Por favor, selecciona "Permitir todo el tiempo" en la siguiente pantalla.',
-          ),
-          actions: [
-            TextButton(
-              child: Text('Continuar'),
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await Geolocator.openAppSettings();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Si ya tenemos los permisos necesarios (always), continuamos
+  return;
 }
 void _initializeApp() async {
    // final prefs = await SharedPreferences.getInstance();

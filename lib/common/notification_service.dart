@@ -362,7 +362,13 @@ class NotificationService {
         if (title == 'Nuevo viaje!!') {
           final message = notificationController.lastNotification.value;
           if (message != null && message.notification?.title != null) {
-            _handleNotificationClick(message.data, title);
+final int? travelId = int.tryParse(message.data['travel'] ?? '');
+   if (travelId != null) {
+          Get.offAll(() => AcceptTravelPage(idTravel: travelId));
+        } else {
+          print('Error: travelId is null');
+          // Puedes navegar a una página de error o manejarlo de otra forma
+        }
           }
         } else if (title == 'Nuevo precio del viaje') {
           AuthService().clearCurrenttravel();
