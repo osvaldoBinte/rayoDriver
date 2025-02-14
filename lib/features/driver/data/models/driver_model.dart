@@ -61,7 +61,13 @@ class DriverModel extends Driver {
       model: json['model'] ?? '',
       phone_support:json['phone_support'] ?? '',
       plates:json['plates'] ?? '',
-      score:json['score']??0
+ score: json['score'] == null 
+          ? 0.0  // valor por defecto como double
+          : json['score'] is int 
+              ? (json['score'] as int).toDouble()  // convertir int a double
+              : json['score'] is double 
+                  ? json['score']  // mantener como double
+                  : double.tryParse(json['score'].toString()) ?? 0.0 
     );
   }
 

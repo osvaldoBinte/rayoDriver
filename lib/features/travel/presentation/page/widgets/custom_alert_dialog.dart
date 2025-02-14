@@ -51,6 +51,10 @@ class CustomAlertDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       elevation: 0,
+       insetPadding: EdgeInsets.symmetric(
+    horizontal: 16.0,
+    vertical: 24.0,
+  ),
       backgroundColor: Colors.transparent,
       child: type == CustomAlertType.info
           ? _buildInfoDialog(context)
@@ -529,32 +533,37 @@ void showCustomAlert({
     pageBuilder: (context, animation, secondaryAnimation) {
       return WillPopScope(
         onWillPop: () async => false,
-        child: FadeTransition(
-          opacity: CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOut,
-          ),
-          child: ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutBack,
-            ),
-            child: CustomAlertDialog(
-              title: title,
-              message: message,
-              confirmText: confirmText,
-              cancelText: cancelText,
-              onConfirm: onConfirm,
-              onCancel: onCancel,
-              imagePath: imagePath,
-              type: type,
-              customWidget: customWidget,
-              driverName: driverName,
-              rating: rating,
-              carModel: carModel,
-              licensePlate: licensePlate,
-              totalTrips: totalTrips,
-              profileImageUrl: profileImageUrl,
+        child: Center(
+          child: Material(
+            color: Colors.transparent,
+            child: FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+              child: ScaleTransition(
+                scale: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutBack,
+                ),
+                child: CustomAlertDialog(
+                  title: title,
+                  message: message,
+                  confirmText: confirmText,
+                  cancelText: cancelText,
+                  onConfirm: onConfirm,
+                  onCancel: onCancel,
+                  imagePath: imagePath,
+                  type: type,
+                  customWidget: customWidget,
+                  driverName: driverName,
+                  rating: rating,
+                  carModel: carModel,
+                  licensePlate: licensePlate,
+                  totalTrips: totalTrips,
+                  profileImageUrl: profileImageUrl,
+                ),
+              ),
             ),
           ),
         ),

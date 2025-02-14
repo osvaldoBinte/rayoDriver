@@ -107,16 +107,21 @@ Future<List<DriverModel>> getDriver(bool conection) async {
     return _loadDrivesFromLocal(sharedPreferences);
   }
 }
-
 Future<List<DriverModel>> _loadDrivesFromLocal(
     SharedPreferences sharedPreferences) async {
-  String drivesString = sharedPreferences.getString('drives') ?? "{}"; // Usamos "{}" para evitar errores en jsonDecode
-
-  if (drivesString.isNotEmpty && drivesString != "{}") {
+  try {
+    String? drivesString = sharedPreferences.getString('drives');
+    
+    // Si no hay datos almacenados, retornamos una lista vacía en lugar de lanzar una excepción
+    if (drivesString == null || drivesString.isEmpty || drivesString == "{}") {
+      return [];
+    }
+    
     var jsonData = jsonDecode(drivesString);
     return [DriverModel.fromJson(jsonData)];
-  } else {
-    throw Exception('No hay drives almacenados localmente.');
+  } catch (e) {
+    print("Error al cargar datos locales: $e");
+    return []; // Retornamos lista vacía en caso de error
   }
 }
   Future<void> removedataaccount() async{

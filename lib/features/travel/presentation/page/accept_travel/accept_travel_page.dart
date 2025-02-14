@@ -135,7 +135,19 @@ class AcceptTravelPage extends StatelessWidget {
                 if (controller.travelByIdController.state.value
                     is TravelByIdAlertLoaded) {
                  if (!controller.isIdStatusOne.value) {
-  return SizedBox.shrink();
+  return ElevatedButton(
+                      onPressed: () async {
+          controller.rejectTravel2();
+                      },
+                      child: Text('Regresar al inicio'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.buttonColormap,
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                        textStyle: TextStyle(fontSize: 18),
+                      ),
+                    );
 }
 else {
                     return Positioned(

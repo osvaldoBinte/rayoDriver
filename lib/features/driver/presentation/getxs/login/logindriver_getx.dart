@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:quickalert/quickalert.dart';
+import 'package:rayo_taxi/common/routes/%20navigation_service.dart';
 import 'package:rayo_taxi/common/settings/routes_names.dart';
 import 'package:rayo_taxi/features/driver/domain/entities/driver.dart';
 import 'package:rayo_taxi/features/driver/domain/usecases/login_driver_usecase.dart';
@@ -49,8 +50,7 @@ class LogindriverGetx extends GetxController {
       final driver = Driver(email: email, password: password);
       await loginDriverUsecase.execute(driver);
       state.value = LogindriverSuccessfully();
-Get.toNamed(RoutesNames.homePage, arguments: {'selectedIndex': 1});
-
+ Get.offAll(()=> HomePage(selectedIndex:1));
       
     } catch (e) {
       state.value = LogindriverFailure(e.toString());
@@ -67,19 +67,18 @@ Get.toNamed(RoutesNames.homePage, arguments: {'selectedIndex': 1});
     }
   }
 
-  void logout() async{
-    
-
+ void logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     state.value = LogindriverInitial();
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.remove('auth_token');
-    });
+    
+    // Eliminar el driver
+    await prefs.remove('drives');
+    
+    // Eliminar el token
     await prefs.remove('auth_token');
-
+    
     await Get.offAll(() => LoginDriverPage());
-
-  }
+}
 
   Future<void> logoutAlert() async {
     showCustomAlert(

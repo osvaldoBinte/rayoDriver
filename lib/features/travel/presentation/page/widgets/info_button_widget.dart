@@ -152,7 +152,7 @@ class InfoButtonWidget extends StatelessWidget {
                               Text(
                                 clientName,
                                 style: const TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
@@ -202,57 +202,7 @@ class InfoButtonWidget extends StatelessWidget {
                           'Fecha',
                           date,
                         ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.grey[300]!,
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/viajes/taxi2.png',
-                                width: 80,
-                                height: 50,
-                                fit: BoxFit.contain,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (carModel.isNotEmpty) ...[
-                                      Text(
-                                        'Modelo: $carModel',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                    if (plates.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Placas: $plates',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 15,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                       
                         const SizedBox(height: 16),
                         _buildInfoRow(
                           Icons.attach_money_rounded,
