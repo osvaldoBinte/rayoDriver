@@ -171,7 +171,7 @@ class _TravelsPagePage extends State<TravelPage> {
             children: [
                if (travel.id_status != 2) ...[
                     Text(
-                      'Importe: ${travel.id_status == 1 ? travel.cost : travel.tarifa}',
+                      'Importe: \$ ${travel.id_status == 1 ? travel.cost : travel.tarifa} MXN',
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 12,
@@ -328,7 +328,7 @@ class _TravelsPagePage extends State<TravelPage> {
                 children: [
                   if (travel.id_status != 2) ...[
                     Text(
-                      'Importe: ${travel.id_status == 1 ? travel.cost : travel.tarifa}',
+                      'Importe:\$ ${travel.id_status == 1 ? travel.cost : travel.tarifa} MXN',
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 12,
