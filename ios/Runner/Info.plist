@@ -36,6 +36,7 @@
 		<array>
 			<string>whatsapp</string>
 			<string>tel</string>
+			<string>telprompt</string>
 		</array>
 		<key>CFBundleShortVersionString</key>
 		<string>$(FLUTTER_BUILD_NAME)</string>

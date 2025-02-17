@@ -13,6 +13,7 @@ extension CustomColorScheme on ColorScheme {
   Color get backgroundColorLogin => Color.fromARGB(255, 5, 5, 5);
   Color get buttongoBack => Colors.white;
   Color get buttongoNotification => Color(0xFFEFC300);
+  Color get emergency => Colors.red;
 
   Color get loader => Colors.white;
   Color get loaderbaseColor => Colors.grey[300]!;

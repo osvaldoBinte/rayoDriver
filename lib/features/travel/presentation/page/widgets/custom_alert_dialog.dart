@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:rayo_taxi/common/theme/app_color.dart';
+
+
 enum CustomAlertType { info, confirm, warning, success, error }
 
 class CustomAlertDialog extends StatelessWidget {
@@ -51,14 +53,17 @@ class CustomAlertDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       elevation: 0,
-       insetPadding: EdgeInsets.symmetric(
-    horizontal: 16.0,
-    vertical: 24.0,
-  ),
       backgroundColor: Colors.transparent,
-      child: type == CustomAlertType.info
-          ? _buildInfoDialog(context)
-          : _buildStandardDialog(context),
+      child: SingleChildScrollView( // Añadimos SingleChildScrollView aquí
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8, // Limitar altura máxima
+          ),
+          child: type == CustomAlertType.info
+              ? _buildInfoDialog(context)
+              : _buildStandardDialog(context),
+        ),
+      ),
     );
   }
 
@@ -206,119 +211,141 @@ class CustomAlertDialog extends StatelessWidget {
         ],
       ),
     );
-  }
-Widget _buildStandardDialog(BuildContext context) {
-  Color headerColor;
-  Widget headerContent;
-  
-  switch (type) {
-    case CustomAlertType.warning:
-      headerColor = Theme.of(context).colorScheme.secondary;
-      headerContent = const AnimatedDollarSigns();
-      break;
-    case CustomAlertType.confirm:
-    default:
-      headerColor = Theme.of(context).colorScheme.Aleradmiration  ;
-      headerContent = const AnimatedExclamationMark();
+  }Widget _buildStandardDialog(BuildContext context) {
+    Color headerColor;
+    Widget headerContent;
+    
+    switch (type) {
+      case CustomAlertType.warning:
+        headerColor = Theme.of(context).colorScheme.secondary;
+        headerContent = const AnimatedDollarSigns();
+        break;
+      case CustomAlertType.confirm:
+      default:
+        headerColor = Theme.of(context).colorScheme.Aleradmiration;
+        headerContent = const AnimatedExclamationMark();
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header con altura reducida
+          Container(
+            height: 90, // Reducida aún más
+            decoration: BoxDecoration(
+              color: headerColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Center(
+              child: headerContent,
+            ),
+          ),
+          // Content section con padding optimizado
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8), // Padding reducido
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (title.isNotEmpty) Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18, // Reducido más
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (title.isNotEmpty) const SizedBox(height: 6),
+                if (message.isNotEmpty) Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+                if (message.isNotEmpty) const SizedBox(height: 12),
+                if (customWidget != null) 
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.4, // Reducido de 0.5 a 0.4
+                    ),
+                    child: SingleChildScrollView(
+                      child: customWidget!,
+                    ),
+                  ),
+                if ((confirmText.isNotEmpty || cancelText?.isNotEmpty == true) &&
+                    customWidget == null)
+                  _buildButtons(context),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  return Container(
-    width: double.infinity,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: headerColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+  Widget _buildButtons(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(top: 4), // Reducido el margen superior
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Container(
+              height: 40, // Altura fija para el botón
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero, // Sin padding
+                ),
+                onPressed: onConfirm ?? () => Navigator.of(context).pop(),
+                child: Text(
+                  confirmText,
+                  style: const TextStyle(
+                    fontSize: 13, // Reducido el tamaño de fuente
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
           ),
-          child: Center(
-            child: headerContent,
-          ),
-        ),
-        // Content section
-        Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              if (title.isNotEmpty) Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+          SizedBox(width: 8), // Espacio entre botones
+          Expanded(
+            child: Container(
+              height: 40, // Altura fija para el botón
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.zero, // Sin padding
+                ),
+                onPressed: onCancel ?? () => Navigator.of(context).pop(),
+                child: Text(
+                  cancelText ?? 'Cancelar',
+                  style: const TextStyle(
+                    fontSize: 13, // Reducido el tamaño de fuente
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-              if (title.isNotEmpty) const SizedBox(height: 12),
-              if (message.isNotEmpty) Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
-              ),
-              if (message.isNotEmpty) const SizedBox(height: 24),
-              if (customWidget != null) customWidget!,
-              if ((confirmText.isNotEmpty || cancelText?.isNotEmpty == true) &&
-                  customWidget == null)
-                _buildButtons(context),
-            ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-Widget _buildButtons(BuildContext context) {
-  return Row(
-    children: [
-      // "Confirmar" button (ahora en gris)
-      Expanded(
-        child: TextButton(
-          onPressed: onConfirm ?? () => Navigator.of(context).pop(),
-          child: Text(
-            confirmText,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-      // "Cancelar" button (ahora en azul)
-      Expanded(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          onPressed: onCancel ?? () => Navigator.of(context).pop(),
-          child: Text(
-            cancelText ?? 'Cancelar',
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
-}
 }
 
 class AnimatedExclamationMark extends StatefulWidget {
@@ -507,78 +534,46 @@ class Particle {
     required this.radius,
   });
 }
+
 void showCustomAlert({
-  required BuildContext context,
-  required String title,
-  required String message,
-  required String confirmText,
-  String? cancelText,
-  VoidCallback? onConfirm,
-  VoidCallback? onCancel,
-  String? imagePath,
-  required CustomAlertType type,
-  Widget? customWidget,
-  String? driverName,
-  String? rating,
-  String? carModel,
-  String? licensePlate,
-  int? totalTrips,
-  String? profileImageUrl,
-}) {
-  showGeneralDialog(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withOpacity(0.5),
-    transitionDuration: const Duration(milliseconds: 400),
-    pageBuilder: (context, animation, secondaryAnimation) {
-      return WillPopScope(
-        onWillPop: () async => false,
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: FadeTransition(
-              opacity: CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOut,
-              ),
-              child: ScaleTransition(
-                scale: CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutBack,
-                ),
-                child: CustomAlertDialog(
-                  title: title,
-                  message: message,
-                  confirmText: confirmText,
-                  cancelText: cancelText,
-                  onConfirm: onConfirm,
-                  onCancel: onCancel,
-                  imagePath: imagePath,
-                  type: type,
-                  customWidget: customWidget,
-                  driverName: driverName,
-                  rating: rating,
-                  carModel: carModel,
-                  licensePlate: licensePlate,
-                  totalTrips: totalTrips,
-                  profileImageUrl: profileImageUrl,
-                ),
+    required BuildContext context,
+    required String title,
+    required String message,
+    required String confirmText,
+    String? cancelText,
+    VoidCallback? onConfirm,
+    VoidCallback? onCancel,
+    String? imagePath,
+    required CustomAlertType type,
+    Widget? customWidget,
+  }) {
+ showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Padding reducido
+          child: Center(
+            child: Material(
+              type: MaterialType.transparency,
+              child: CustomAlertDialog(
+                title: title,
+                message: message,
+                confirmText: confirmText,
+                cancelText: cancelText,
+                onConfirm: onConfirm,
+                onCancel: onCancel,
+                imagePath: imagePath,
+                type: type,
+                customWidget: customWidget,
               ),
             ),
           ),
-        ),
-      );
-    },
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      return BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: animation.value * 3,
-          sigmaY: animation.value * 3,
-        ),
-        child: child,
-      );
-    },
-  );
+        );
+      },
+    );
 }
 class AnimatedDollarSigns extends StatefulWidget {
   const AnimatedDollarSigns({Key? key}) : super(key: key);

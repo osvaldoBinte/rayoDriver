@@ -80,6 +80,7 @@ class TravelRouteController extends GetxController {
   final CanceltravelGetx _cancelTravel = Get.find<CanceltravelGetx>();
   final RejectTravelOfferGetx rejectTravelOfferGetx =
       Get.find<RejectTravelOfferGetx>();
+LatLng? _lastKnownDriverPosition;
 
   RxBool shouldTrackDriver = false.obs;
   Rx<BitmapDescriptor> startIcon = BitmapDescriptor.defaultMarker.obs;
@@ -319,15 +320,7 @@ void _setupLocationIsolateListener() {
         isFollowingDriver.value) {
       try {
         double bearing = 0.0;
-     /*   if (lastDriverPositionForRouteUpdate != null) {
-          bearing = _calculateBearing(
-            lastDriverPositionForRouteUpdate!.latitude,
-            lastDriverPositionForRouteUpdate!.longitude,
-            driverLocation.value!.latitude,
-            driverLocation.value!.longitude,
-          );
-        }*/
-
+    
         mapController
             ?.animateCamera(
           CameraUpdate.newCameraPosition(
@@ -348,38 +341,28 @@ void _setupLocationIsolateListener() {
     }
   }
 
-  double _calculateBearing(
-      double startLat, double startLng, double endLat, double endLng) {
-    var startLatRad = startLat * (pi / 180.0);
-    var startLngRad = startLng * (pi / 180.0);
-    var endLatRad = endLat * (pi / 180.0);
-    var endLngRad = endLng * (pi / 180.0);
 
-    var dLng = endLngRad - startLngRad;
 
-    var y = sin(dLng) * cos(endLatRad);
-    var x = cos(startLatRad) * sin(endLatRad) -
-        sin(startLatRad) * cos(endLatRad) * cos(dLng);
-
-    var bearing = atan2(y, x);
-    bearing = bearing * (180.0 / pi);
-    bearing = (bearing + 360.0) % 360.0;
-
-    return bearing;
-  }
-
-  void _addMarkerWithoutBounds(LatLng latLng,
+void _addMarkerWithoutBounds(LatLng latLng,
     {required bool isStartPlace, bool isDriver = false}) {
   final updatedMarkers = Set<Marker>.from(markers.value);
   String title;
   BitmapDescriptor markerIcon;
   String markerId;
+  double rotation = 0.0;
 
   if (isDriver) {
     title = 'Conductor';
     markerIcon = driverIcon.value;
     markerId = 'driver';
     driverLocation.value = latLng;
+    
+    // Calculate bearing only if we have a previous position
+    if (_lastKnownDriverPosition != null) {
+      rotation = _calculateBearing(_lastKnownDriverPosition!, latLng);
+    }
+    // Update last known position for next calculation
+    _lastKnownDriverPosition = latLng;
   } else if (isStartPlace) {
     title = 'Inicio';
     markerIcon = startIcon.value;
@@ -399,9 +382,11 @@ void _setupLocationIsolateListener() {
       position: latLng,
       infoWindow: InfoWindow(title: title),
       icon: markerIcon,
-      anchor: Offset(0.5, 0.5), // Centrar el icono en la posición
+      rotation: isDriver ? rotation : 0.0, // Apply rotation only to driver marker
+      anchor: const Offset(0.5, 0.5),
+      flat: isDriver, // Make driver marker flat to enable rotation
       onTap: () {
-        if (!isDriver) { // Solo mostrar preview para inicio y destino, no para el conductor
+        if (!isDriver) {
           _showLocationPreview(latLng, title);
         }
       },
@@ -409,6 +394,19 @@ void _setupLocationIsolateListener() {
   );
 
   markers.value = updatedMarkers;
+}
+double _calculateBearing(LatLng start, LatLng end) {
+  double lat1 = start.latitude * pi / 180;
+  double lat2 = end.latitude * pi / 180;
+  double long1 = start.longitude * pi / 180;
+  double long2 = end.longitude * pi / 180;
+  double dLon = (long2 - long1);
+  double y = sin(dLon) * cos(lat2);
+  double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+  double bearing = atan2(y, x);
+  bearing = bearing * 180 / pi;
+  bearing = (bearing + 360) % 360;
+  return bearing;
 }
 
 
@@ -602,74 +600,85 @@ void _showLocationPreview(LatLng location, String title) {
     }
   }
 
-  void getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
-      Get.snackbar('Error', 'Por favor, habilita los servicios de ubicación');
-      return;
-    }
+ void getCurrentLocation() async {
+  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    await Geolocator.openLocationSettings();
+    Get.snackbar('Error', 'Por favor, habilita los servicios de ubicación');
+    return;
+  }
 
-    LocationPermission permission = await Geolocator.checkPermission();
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        Get.snackbar('Error', 'Los permisos de ubicación están denegados');
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      Get.snackbar(
-          'Error', 'Los permisos de ubicación están denegados permanentemente');
+      Get.snackbar('Error', 'Los permisos de ubicación están denegados');
       return;
     }
+  }
 
-    LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
-      distanceFilter: 1,
+  if (permission == LocationPermission.deniedForever) {
+    Get.snackbar('Error', 'Los permisos de ubicación están denegados permanentemente');
+    return;
+  }
+
+  LocationSettings locationSettings = const LocationSettings(
+    accuracy: LocationAccuracy.bestForNavigation,
+    distanceFilter: 1,
+  );
+
+  positionStreamSubscription = Geolocator.getPositionStream(
+    locationSettings: locationSettings,
+  ).listen((Position position) {
+    if (driverLocation.value != null) {
+      lastDriverPositionForRouteUpdate = driverLocation.value;
+    }
+
+    driverLocation.value = LatLng(position.latitude, position.longitude);
+    
+    // Use the device's heading when available, otherwise calculate from positions
+    double bearing = position.heading;
+    if (bearing == 0 && _lastKnownDriverPosition != null) {
+      bearing = _calculateBearing(_lastKnownDriverPosition!, driverLocation.value!);
+    }
+    
+    _addMarkerWithoutBounds(
+      driverLocation.value!,
+      isStartPlace: false,
+      isDriver: true,
     );
 
-    positionStreamSubscription = Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen((Position position) {
-      if (driverLocation.value != null) {
-        lastDriverPositionForRouteUpdate = driverLocation.value;
+    // Socket location update logic
+    if (travelList.isNotEmpty) {
+      String idStatusString = travelList[0].id_status.toString();
+      if (idStatusString == "3" || idStatusString == "4") {
+        socketDriver.updateLocation(
+          travelList[0].id.toString(),
+          {
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+            'speed': position.speed,
+            'bearing': bearing
+          },
+        );
       }
+    }
 
-      driverLocation.value = LatLng(position.latitude, position.longitude);
-      _addMarkerWithoutBounds(driverLocation.value!,
-          isStartPlace: false, isDriver: true);
+    // Update camera focus if needed
+    if (travelList.isNotEmpty) {
+      String idStatusString = travelList[0].id_status.toString();
+      int idStatus = int.tryParse(idStatusString) ?? 0;
 
-      // Enviar ubicación por socket si estamos en estado 3 o 4
-      if (travelList.isNotEmpty) {
-        String idStatusString = travelList[0].id_status.toString();
-        if (idStatusString == "3" || idStatusString == "4") {
-          socketDriver.updateLocation(
-            travelList[0].id.toString(),
-            {
-              'latitude': position.latitude,
-              'longitude': position.longitude,
-              'speed': position.speed,
-              'bearing': position.heading
-            },
-          );
-        }
+      if (idStatus == 3 || idStatus == 4) {
+        shouldTrackDriver.value = true;
+        isFollowingDriver.value = true;
+        _focusOnDriver();
       }
-      if (travelList.isNotEmpty) {
-        String idStatusString = travelList[0].id_status.toString();
-        int idStatus = int.tryParse(idStatusString) ?? 0;
+    }
 
-        if (idStatus == 3 || idStatus == 4) {
-          shouldTrackDriver.value = true;
-          isFollowingDriver.value = true;
-          _focusOnDriver();
-        }
-      }
-
-      updateDriverRouteIfNeeded();
-    });
-  }
+    updateDriverRouteIfNeeded();
+  });
+}
 
   void updateDriverRouteIfNeeded() {
     if (isIdStatusSix.value) return;
