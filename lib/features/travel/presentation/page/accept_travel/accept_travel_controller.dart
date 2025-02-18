@@ -376,7 +376,7 @@ class AcceptTravelController extends GetxController {
   }
   
   
-  void showInputAmountAlert(
+void showInputAmountAlert(
     BuildContext context, AcceptTravelController controller) {
   final TextEditingController localAmountController = TextEditingController();
   
@@ -427,19 +427,14 @@ class AcceptTravelController extends GetxController {
           ),
         );
       } else {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final screenHeight = MediaQuery.of(context).size.height;
-            final maxHeight = screenHeight * 0.7;
-            
-            return Container(
-              constraints: BoxConstraints(
-                maxHeight: maxHeight,
-                maxWidth: MediaQuery.of(context).size.width * 0.9,
-              ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Contenido scrolleable
+            Flexible(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -490,109 +485,108 @@ class AcceptTravelController extends GetxController {
                           ),
                         ),
                       ),
-
-                      /*
-                      Obx(() {
-                        if (inputAmount.value.isNotEmpty) {
-                          String displayAmount = inputAmount.value.length > 6
-                              ? '${inputAmount.value.substring(0, 6)}...'
-                              : inputAmount.value;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              'Monto ofertado: \$${displayAmount}',
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      }),
-*/
-                      // Campo de entrada
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: TextField(
-                          controller: localAmountController,
-                          keyboardType: TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (value) {
-                            inputAmount.value = value;
-                            buttonText.value = value.isNotEmpty
-                                ? "Ofertar \$${value}"
-                                : "Confirmar \$${travelCost}";
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Importe \$ MXN',
-                            filled: true,
-                            fillColor: Colors.grey[200],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                              borderSide: BorderSide.none,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.attach_money,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Botón de acción
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (isLoading.value) return;
-                          
-                          final String montoStr = localAmountController.text.trim();
-                          
-                          if (montoStr.isNotEmpty) {
-                            // Si hay un monto ingresado, validamos
-                            final double inputAmount = double.parse(montoStr);
-                            final double cost = double.parse(travelCost.toString());
-                            
-                            if (inputAmount < cost) {
-                              QuickAlert.show(
-                                context: Get.context!,
-                                type: QuickAlertType.error,
-                                title: 'Importe inválido',
-                                text: 'El monto ofertado debe ser mayor al costo del viaje',
-                              );
-                              return;
-                            }
-                            // Procesamos el monto ingresado
-                            isLoading.value = true;
-                            try {
-                              await controller.processAndSubmitAmount(montoStr);
-                              await disposeController();
-                              Get.back();
-                            } finally {
-                              isLoading.value = false;
-                            }
-                          } else {
-                            // Si no hay monto, aceptamos el viaje con el costo original
-                            isLoading.value = true;
-                            try {
-                              await controller.acceptTravel(Get.context!);
-                              await disposeController();
-                              Get.back();
-                            } finally {
-                              isLoading.value = false;
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.buttonColormap2,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: Obx(() => Text(
-                          buttonText.value,
-                          style: const TextStyle(fontSize: 14),
-                        )),
-                      ),
                     ],
                   ),
                 ),
               ),
-            );
-          },
+            ),
+
+            // Input y botón (siempre visibles)
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Campo de entrada
+                  TextField(
+                    controller: localAmountController,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (value) {
+                      inputAmount.value = value;
+                      buttonText.value = value.isNotEmpty
+                          ? "Ofertar \$${value}"
+                          : "Confirmar \$${travelCost}";
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Importe \$ MXN',
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.attach_money,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Botón de acción
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (isLoading.value) return;
+                        
+                        final String montoStr = localAmountController.text.trim();
+                        
+                        if (montoStr.isNotEmpty) {
+                          final double inputAmount = double.parse(montoStr);
+                          final double cost = double.parse(travelCost.toString());
+                          
+                          if (inputAmount < cost) {
+                            QuickAlert.show(
+                              context: Get.context!,
+                              type: QuickAlertType.error,
+                              title: 'Importe inválido',
+                              text: 'El monto ofertado debe ser mayor al costo del viaje',
+                            );
+                            return;
+                          }
+                          isLoading.value = true;
+                          try {
+                            await controller.processAndSubmitAmount(montoStr);
+                            await disposeController();
+                            Get.back();
+                          } finally {
+                            isLoading.value = false;
+                          }
+                        } else {
+                          isLoading.value = true;
+                          try {
+                            await controller.acceptTravel(Get.context!);
+                            await disposeController();
+                            Get.back();
+                          } finally {
+                            isLoading.value = false;
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.buttonColormap2,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Obx(() => Text(
+                        buttonText.value,
+                        style: const TextStyle(fontSize: 14),
+                      )),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         );
       }
     }),
