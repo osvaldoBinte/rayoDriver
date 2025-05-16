@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "567772422342",
+    "project_id": "rayo-chofer",
+    "storage_bucket": "rayo-chofer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:567772422342:android:4703d3f423dfdd86c277c7",
+        "android_client_info": {
+          "package_name": "com.binteconsulting.taxidriver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAycSlYdWvFV3sqwMLCkV-2QzkuCziY68"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
