@@ -60,7 +60,7 @@ dependencies:
   flutter_svg: ^2.0.17
   url_launcher: ^6.3.1
   socket_io_client: ^3.0.2
-  workmanager: ^0.5.2
+ 
   location: ^7.0.1  
   flutter_foreground_task: ^6.1.3
   

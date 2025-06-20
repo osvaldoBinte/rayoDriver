@@ -48,7 +48,7 @@ void setupMemoryMonitoring() {
 final connectivityService = ConnectivityService();
 UsecaseConfig usecaseConfig = UsecaseConfig();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-String enviromentSelect = Enviroment.production.value; 
+String enviromentSelect = Enviroment.development.value; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
